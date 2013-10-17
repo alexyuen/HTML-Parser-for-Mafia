@@ -4,9 +4,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -20,6 +17,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -28,7 +26,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -40,6 +37,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import net.miginfocom.swing.MigLayout;
 import tzar.mafiabot.engine.Parser;
 
 
@@ -49,18 +47,19 @@ public class MafiaBotGUI extends JFrame {
 
 	private static File cacheFile;
 
-	private static final JLabel lblMafiabot = new JLabel("MafiaBot");
-	private static JPanel contentPane;
+	
+	private static JPanel contentPanel;
+	private static final JLabel titleLabel = new JLabel("MafiaBot");
+	private static final JLabel helpLabel = new JLabel("");
+	private static final JTextField urlField = new JTextField();
 	private static final JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 	private static final JProgressBar progressBar = new JProgressBar();
 	private static final JButton btnStop = new JButton("Stop");
-	private static final JSeparator separator = new JSeparator();
 	private static final JButton btnReparse = new JButton("Reparse Thread");
 	private static final JButton btnDeleteCacheAndReparse = new JButton("Delete Cache & Reparse Thread");
-	private static final JTextField urlField = new JTextField();
-
+	
 	private static boolean canSpecifyThread = false;
-
+	
 	/**
 	 * Launch the application.
 	 */
@@ -84,7 +83,7 @@ public class MafiaBotGUI extends JFrame {
 	private void parse() {
 		new Thread() {
 			public void run() {
-				//Ponygoons
+				// TRS
 				//String thread = "http://www.mlponies.com/forums/viewtopic.php?f=13&t=714"; // Glaed's game
 				//String thread = "http://www.mlponies.com/forums/viewtopic.php?f=13&t=961"; // WW's game
 				//String thread = "http://www.mlponies.com/forums/viewtopic.php?f=13&t=1045"; // Chunky's game
@@ -94,13 +93,13 @@ public class MafiaBotGUI extends JFrame {
 				//String thread = "http://www.roundstable.com/forums/viewtopic.php?f=6&t=3158"; // Sharkmafia's game
 				
 				// BHP
-				//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25403"; // Glaed's Mafia
-				//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25548"; // Westy's Mafia
-				//String thread = "https://www.bluehellproductions.com/forum/index.php?showtopic=25603"; // Nodlied's Mafia
+				//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25403"; // Glaed's game
+				//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25548"; // Westy's game
+				//String thread = "https://www.bluehellproductions.com/forum/index.php?showtopic=25603"; // Nodlied's game
 				
-				//ELP
-				//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316";
-				String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3415";
+				// ELP
+				String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316"; // Hylius's game
+				//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3415"; // Westy's game
 
 				if (!canSpecifyThread) {
 					urlField.setText(thread);
@@ -109,7 +108,7 @@ public class MafiaBotGUI extends JFrame {
 				}
 
 				cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
-				Parser bot = new Parser(thread, cacheFile);
+				Parser bot = new Parser(thread);
 				bot.start();
 			}
 		}.start();
@@ -145,16 +144,16 @@ public class MafiaBotGUI extends JFrame {
 		setTitle("MafiaBot by Tzar469");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 503, 558);
-		contentPane = new JPanel();
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		setContentPane(contentPane);
-		GridBagLayout gbl_contentPane = new GridBagLayout();
-		gbl_contentPane.columnWidths = new int[]{154, 0};
-		gbl_contentPane.rowHeights = new int[]{17, 0, 0, 0, 0, 0, 0, 0, 0};
-		gbl_contentPane.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gbl_contentPane.rowWeights = new double[]{0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-		contentPane.setLayout(gbl_contentPane);
-		lblMafiabot.addMouseListener(new MouseAdapter() {
+		contentPanel = new JPanel();
+		contentPanel.setForeground(Color.LIGHT_GRAY);
+		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPanel);
+		contentPanel.setLayout(new MigLayout("insets 0", "[477px,grow]", "[35px][23px][330px,grow][23px][23px][23px][23px]"));
+		titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		titleLabel.setFont(new Font("Papyrus", Font.PLAIN, 21));
+		contentPanel.add(titleLabel, "flowx,cell 0 0,grow");
+		helpLabel.setToolTipText("Help");
+		helpLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				try {
@@ -163,20 +162,9 @@ public class MafiaBotGUI extends JFrame {
 				} catch (Exception ignored) { }
 			}
 		});
-		lblMafiabot.setHorizontalAlignment(SwingConstants.CENTER);
-		lblMafiabot.setFont(new Font("Papyrus", Font.PLAIN, 21));
-		GridBagConstraints gbc_lblMafiabot = new GridBagConstraints();
-		gbc_lblMafiabot.fill = GridBagConstraints.BOTH;
-		gbc_lblMafiabot.insets = new Insets(0, 0, 5, 0);
-		gbc_lblMafiabot.gridx = 0;
-		gbc_lblMafiabot.gridy = 0;
-		contentPane.add(lblMafiabot, gbc_lblMafiabot);
-
-		GridBagConstraints gbc_urlField = new GridBagConstraints();
-		gbc_urlField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_urlField.insets = new Insets(0, 0, 5, 0);
-		gbc_urlField.gridx = 0;
-		gbc_urlField.gridy = 1;
+		helpLabel.setIcon(new ImageIcon(MafiaBotGUI.class.getResource("/javax/swing/plaf/metal/icons/ocean/question.png")));
+		
+		contentPanel.add(helpLabel, "cell 0 0");
 		urlField.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
@@ -190,7 +178,7 @@ public class MafiaBotGUI extends JFrame {
 		});
 		urlField.setFont(new Font("Palatino Linotype", Font.PLAIN, 12));
 		urlField.setBackground(Color.WHITE);
-		urlField.setText("Enter URL of thread to parse...");
+		urlField.setText("Paste URL of thread here, then press Enter key.");
 		urlField.setEditable(canSpecifyThread);
 		urlField.setHorizontalAlignment(SwingConstants.CENTER);
 		urlField.addKeyListener(new KeyAdapter() {
@@ -201,62 +189,24 @@ public class MafiaBotGUI extends JFrame {
 				}
 			}
 		});
-		contentPane.add(urlField, gbc_urlField);
-
-		GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
-		gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
-		gbc_tabbedPane.fill = GridBagConstraints.BOTH;
-		gbc_tabbedPane.gridx = 0;
-		gbc_tabbedPane.gridy = 2;
-		contentPane.add(tabbedPane, gbc_tabbedPane);
-
-		GridBagConstraints gbc_progressBar = new GridBagConstraints();
-		gbc_progressBar.fill = GridBagConstraints.HORIZONTAL;
-		gbc_progressBar.insets = new Insets(0, 0, 5, 0);
-		gbc_progressBar.gridx = 0;
-		gbc_progressBar.gridy = 3;
+		contentPanel.add(urlField, "cell 0 1,growx,aligny center");
+		contentPanel.add(tabbedPane, "cell 0 2,grow");
 		progressBar.setStringPainted(true);
-		contentPane.add(progressBar, gbc_progressBar);
-
-		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
-		gbc_btnCancel.insets = new Insets(0, 0, 5, 0);
-		gbc_btnCancel.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnCancel.gridx = 0;
-		gbc_btnCancel.gridy = 4;
+		contentPanel.add(progressBar, "cell 0 3,growx,aligny center");
+		btnStop.setEnabled(false);
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (isStopped()) {
-					//saveActionLog();
-				} else {
-					stop();
-				}
+				stop();
 			}
 		});
-		contentPane.add(btnStop, gbc_btnCancel);
-
-		GridBagConstraints gbc_separator = new GridBagConstraints();
-		gbc_separator.insets = new Insets(0, 0, 5, 0);
-		gbc_separator.gridx = 0;
-		gbc_separator.gridy = 5;
-		contentPane.add(separator, gbc_separator);
-
-		GridBagConstraints gbc_btnReparse = new GridBagConstraints();
-		gbc_btnReparse.insets = new Insets(0, 0, 5, 0);
-		gbc_btnReparse.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnReparse.gridx = 0;
-		gbc_btnReparse.gridy = 6;
+		contentPanel.add(btnStop, "cell 0 4,growx,aligny center");
 		btnReparse.setEnabled(false);
 		btnReparse.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				reparse();
 			}
 		});
-		contentPane.add(btnReparse, gbc_btnReparse);
-
-		GridBagConstraints gbc_btnDeleteCacheAndReparse = new GridBagConstraints();
-		gbc_btnDeleteCacheAndReparse.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnDeleteCacheAndReparse.gridx = 0;
-		gbc_btnDeleteCacheAndReparse.gridy = 7;
+		contentPanel.add(btnReparse, "cell 0 5,growx,aligny center");
 		btnDeleteCacheAndReparse.setEnabled(false);
 		btnDeleteCacheAndReparse.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -266,9 +216,7 @@ public class MafiaBotGUI extends JFrame {
 				reparse();
 			}
 		});
-		contentPane.add(btnDeleteCacheAndReparse, gbc_btnDeleteCacheAndReparse);
-
-
+		contentPanel.add(btnDeleteCacheAndReparse, "cell 0 6,growx,aligny center");
 
 		redirectSystemStreams();
 	}
@@ -325,6 +273,7 @@ public class MafiaBotGUI extends JFrame {
 		progressBar.setValue(progress);
 	}
 
+	// make sure gui is stopped before calling this method
 	private static void saveActionLog() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {

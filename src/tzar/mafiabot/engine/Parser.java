@@ -38,9 +38,9 @@ public class Parser {
 
 	private boolean hasPlayersList = false;
 
-	public Parser(String thread, File cacheFile) {
+	public Parser(String thread) {
 		this.thread = thread;
-		this.cacheFile = cacheFile;
+		this.cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
 	}
 
 	public void start() {
