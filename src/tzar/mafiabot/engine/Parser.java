@@ -13,7 +13,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import tzar.mafiabot.gui.MafiaBotGUI;
+import tzar.mafiabot.gui.MafiaView;
 
 
 public class Parser {
@@ -37,10 +37,13 @@ public class Parser {
 	private Elements newPosts = new Elements();
 
 	private boolean hasPlayersList = false;
+	
+	private MafiaView view = null;
 
-	public Parser(String thread) {
+	public Parser(String thread, MafiaView view) {
 		this.thread = thread;
 		this.cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
+		this.view = view;
 	}
 
 	public void start() {
@@ -67,7 +70,7 @@ public class Parser {
 			post_edit = "span.gensmall";
 		} else {
 			System.out.println("ERROR: The specified forum " + thread + " is not yet supported.");
-			MafiaBotGUI.stop();
+			view.stop();
 			return;
 		}
 
@@ -119,7 +122,7 @@ public class Parser {
 			System.err.println("A cache file was not generated because the game has not yet started.");
 		}
 
-		MafiaBotGUI.stop();
+		view.stop();
 	}
 
 	private void parse(String url) throws Exception {
@@ -137,13 +140,13 @@ public class Parser {
 				double current = Double.parseDouble(pageOfMatcher.group(1));
 				double end = Double.parseDouble(pageOfMatcher.group(2));
 				//System.out.println(current + " " + end);
-				MafiaBotGUI.setProgress((int) (current / end * 100));
+				view.setProgress((int) (current / end * 100));
 			}
 		} else if (!readingFromCache) {
-			MafiaBotGUI.setProgress(100);
+			view.setProgress(100);
 		} else {
 			// successfully opened the cache file
-			MafiaBotGUI.setProgress(1);
+			view.setProgress(1);
 		}
 
 		// check to see if we are jumping posts
@@ -154,7 +157,7 @@ public class Parser {
 		final Elements allThePostsOnThisPage = thisThreadPage.select(posts);
 		// parse each post (post = the entire post, including avatar, heading, and signature)
 		for (final Element post : allThePostsOnThisPage) {
-			if (MafiaBotGUI.isStopped()) {
+			if (view.isStopped()) {
 				// Stop execution if stopped button was pressed
 				break;
 			}
@@ -377,11 +380,11 @@ public class Parser {
 		}
 
 		// check if the stop button has been pressed
-		if (!MafiaBotGUI.isStopped()) {
+		if (!view.isStopped()) {
 			if (readingFromCache) {
 				// finished parsing the cache; load the thread to check for new posts
 				readingFromCache = false;
-				MafiaBotGUI.setProgress(2);
+				view.setProgress(2);
 				Element linkToLastPost = allThePostsOnThisPage.last().select("a[href~="+ postNumberPattern.pattern() + "]:not("+post_content+" a)").last();
 				linkToLastPost.setBaseUri(thread);
 				parse(linkToLastPost.absUrl("href"));
@@ -418,12 +421,12 @@ public class Parser {
 		if (isDay) {
 			day = num;
 			isNight = false;
-			MafiaBotGUI.setPhase("Day " + day);
+			view.setPhase("Day " + day);
 			actors.printPlayers();
 		} else {
 			night = num;
 			isNight = true;
-			MafiaBotGUI.setPhase("Night " + num);
+			view.setPhase("Night " + num);
 		}
 	}
 

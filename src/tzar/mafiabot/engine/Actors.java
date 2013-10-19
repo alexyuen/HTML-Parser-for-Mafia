@@ -321,11 +321,10 @@ public class Actors {
 				for (Player p : allPlayersDead)
 					System.out.println(p.getName());
 			}
-			System.out.println("[/code]\n");
-
 		} else if (!votesCasted) {
 			System.out.printf("No votes have been cast.%n%n");
 		}
+		System.out.println("[/code]\n");
 
 	}
 
