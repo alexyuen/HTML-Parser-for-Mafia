@@ -23,7 +23,7 @@ public class Parser {
 
 	private static final Pattern dayNightHack = Pattern.compile("(?i)(day|night)\\s*(\\d+)");
 
-	private String thread, posts, author, post_content, bold_commands, next_button, post_edit;
+	private final String thread, posts, author, post_content, bold_commands, next_button, post_edit;
 
 	private HashSet<String> gms = new HashSet<String>();
 	private Actors actors;
@@ -44,9 +44,7 @@ public class Parser {
 		this.thread = thread;
 		this.cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
 		this.view = view;
-	}
-
-	public void start() {
+		
 		if (thread.contains("bluehell")) {
 			posts = "div.post_block";
 			author = "div.post_username";
@@ -69,15 +67,17 @@ public class Parser {
 			next_button = "a:matchesOwn(^Next$)";
 			post_edit = "span.gensmall";
 		} else {
+			posts = author = post_content = bold_commands = next_button = post_edit = null;
 			System.out.println("ERROR: The specified forum " + thread + " is not yet supported.");
-			view.stop();
-			return;
+			view.parseCompleted();
 		}
+	}
 
+	public void start() {
 		readingFromCache = cacheFile.exists();
 
-		// read from the cache & thread
 		try {
+			// time the parse execution
 			long startTime = System.currentTimeMillis();
 			parse(thread);
 			long endTime = System.currentTimeMillis();
@@ -122,7 +122,7 @@ public class Parser {
 			System.err.println("A cache file was not generated because the game has not yet started.");
 		}
 
-		view.stop();
+		view.parseCompleted();
 	}
 
 	private void parse(String url) throws Exception {

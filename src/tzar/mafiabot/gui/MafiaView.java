@@ -1,7 +1,6 @@
 package tzar.mafiabot.gui;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Toolkit;
@@ -12,7 +11,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -24,10 +22,8 @@ import javax.swing.ImageIcon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -42,8 +38,6 @@ import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
@@ -61,7 +55,7 @@ import tzar.mafiabot.engine.Parser;
 @SuppressWarnings("serial")
 public class MafiaView extends JFrame {
 
-	private static File cacheFile;
+	private File cacheFile;
 
 	private final JPanel contentPanel = new JPanel();
 	private final JLabel titleLabel = new JLabel("MafiaBot");
@@ -102,13 +96,8 @@ public class MafiaView extends JFrame {
 		if (!canSpecifyThread) {
 			gui.reparse();
 		} else {
-			gui.stop();
+			gui.parseCompleted();
 		}
-	}
-
-	private void maximize() {
-		setExtendedState(MAXIMIZED_BOTH);
-		setVisible(true);
 	}
 
 	/**
@@ -173,7 +162,7 @@ public class MafiaView extends JFrame {
 		btnStop.setEnabled(false);
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				stop();
+				parseCompleted();
 			}
 		});
 		contentPanel.add(btnStop, "cell 0 4,growx,aligny center");
@@ -200,9 +189,15 @@ public class MafiaView extends JFrame {
 			urlField.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 		}
 		redirectSystemStreams();
+		
+	}
+	
+	private void maximize() {
+		setExtendedState(MAXIMIZED_BOTH);
+		setVisible(true);
 	}
 
-	public void reparse() {
+	private void reparse() {
 		tabbedPane.removeAll();
 		setPhase("Day 0");
 		setProgress(0);
@@ -232,7 +227,8 @@ public class MafiaView extends JFrame {
 
 				cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
 				Parser bot = new Parser(thread, MafiaView.this);
-				bot.start();
+				if (!isStopped())
+					bot.start();
 			}
 		}.start();
 	}
@@ -244,40 +240,39 @@ public class MafiaView extends JFrame {
 	public void setPhase(final String phase) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				try {
-					JTextPane errorPane = new JTextPane();
-					errorPane.setEditable(false);
+				JTextPane errorPane = new JTextPane();
+				errorPane.setEditable(false);
 
-					StyledDocument errorDoc = errorPane.getStyledDocument();
-					addStyles(errorDoc);
-					insertStyledString(errorDoc, "bold", "Debugging & Error Log (" + phase + "):\n");
+				StyledDocument errorDoc = errorPane.getStyledDocument();
+				addStyles(errorDoc);
+				insertStyledString(errorDoc, "bold", "Debugging & Error Log (" + phase + "):\n");
 
 
-					JTextPane outputTextPane = new JTextPane();
-					makeUndoable(outputTextPane);
-					//outputTextArea.setEditable(false);
+				JTextPane outputTextPane = new JTextPane();
+				//outputTextPane.setDragEnabled(true);
+				makeUndoable(outputTextPane);
+				//outputTextArea.setEditable(false);
 
-					StyledDocument outputDoc = outputTextPane.getStyledDocument();
-					addStyles(outputDoc);
-					insertStyledString(outputDoc, "bold", "Action log (" + phase + "):\n");
+				StyledDocument outputDoc = outputTextPane.getStyledDocument();
+				addStyles(outputDoc);
+				insertStyledString(outputDoc, "bold", "Action log (" + phase + "):\n");
 
-					JSplitPane splitPane = new JSplitPane();
-					splitPane.setLeftComponent(new JScrollPane(errorPane));
-					splitPane.setRightComponent(new JScrollPane(outputTextPane));
-					splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+				JSplitPane splitPane = new JSplitPane();
+				splitPane.setLeftComponent(new JScrollPane(errorPane));
+				splitPane.setRightComponent(new JScrollPane(outputTextPane));
+				splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 
-					splitPane.setContinuousLayout(true);
-					splitPane.setOneTouchExpandable(true);
-					splitPane.setDividerLocation(0.0d);
-					tabbedPane.addTab(phase, splitPane);
-					if (tabbedPane.getSelectedIndex() == tabbedPane.getTabCount() - 2)
-						tabbedPane.setSelectedComponent(splitPane);
-				} catch (Exception e) { e.printStackTrace(); }
+				splitPane.setContinuousLayout(true);
+				splitPane.setOneTouchExpandable(true);
+				splitPane.setDividerLocation(0.0d);
+				tabbedPane.addTab(phase, splitPane);
+				if (tabbedPane.getSelectedIndex() == tabbedPane.getTabCount() - 2)
+					tabbedPane.setSelectedComponent(splitPane);
 			}
 		});
 	}
 
-	public void stop() {
+	public void parseCompleted() {
 		//getTextArea(false).setCaretPosition(0);
 		//btnStop.setText("Save action log");
 		btnStop.setEnabled(false);
@@ -297,21 +292,20 @@ public class MafiaView extends JFrame {
 		return btnReparse.isEnabled();
 	}
 
-	private void makeUndoable(JTextComponent textArea) {
-		// code taken from: http://stackoverflow.com/a/12030993
+	private void makeUndoable(JTextComponent textComponent) {
+		// code from: http://stackoverflow.com/a/12030993
 		final UndoManager undoManager = new UndoManager();
-		Document doc = textArea.getDocument();
+		Document doc = textComponent.getDocument();
 		doc.addUndoableEditListener(new UndoableEditListener() {
 			@Override
 			public void undoableEditHappened(UndoableEditEvent e) {
 				//System.out.println("Add edit");
 				undoManager.addEdit(e.getEdit());
-
 			}
 		});
 
-		InputMap im = textArea.getInputMap(JComponent.WHEN_FOCUSED);
-		ActionMap am = textArea.getActionMap();
+		InputMap im = textComponent.getInputMap(JComponent.WHEN_FOCUSED);
+		ActionMap am = textComponent.getActionMap();
 
 		im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Undo");
 		im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Redo");
@@ -362,7 +356,7 @@ public class MafiaView extends JFrame {
 		s = doc.addStyle("large", regular);
 		StyleConstants.setFontSize(s, 16);
 
-		// a style for JButton
+		// style for JButton
 		/*
 		s = doc.addStyle("button", regular);
         StyleConstants.setAlignment(s, StyleConstants.ALIGN_CENTER);
@@ -432,70 +426,6 @@ public class MafiaView extends JFrame {
 			return (JTextPane) scrollPane.getViewport().getView();
 		}
 
-	}
-
-	// make sure gui is stopped before calling this method
-	protected void saveActionLog() {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				// initialize the file chooser to the current directory, set to text files only, and give default file name
-				File currentDirectory = new File(System.getProperty("user.dir"));
-				JFileChooser fileChooser = new JFileChooser(currentDirectory);
-				fileChooser.setSelectedFile(new File("MafiaBot Action Log.txt"));
-				FileFilter filter = new FileNameExtensionFilter("Text Documents (*.txt)", "txt");
-				fileChooser.setFileFilter(filter);
-				fileChooser.setDialogType(JFileChooser.SAVE_DIALOG);
-
-				// let the user choose where to save to, and prompt to overwrite if the file already exists
-				File saveToFile = null;
-				while (saveToFile == null) {
-					// show the save dialog
-					int saveDialogResult = fileChooser.showSaveDialog(null);
-					if (saveDialogResult == JFileChooser.APPROVE_OPTION) {
-						File selectedFile = fileChooser.getSelectedFile();
-						String fileName = selectedFile.getName();
-						if (!fileName.matches(".*\\.txt$")) {
-							fileName += ".txt";
-							selectedFile = new File(selectedFile.getParentFile(), fileName);
-						}
-						if (selectedFile.exists()) {
-							int response = JOptionPane.showConfirmDialog(null,
-									"The file \"" + selectedFile.getName() + 
-									"\" already exists. Do you want to replace it?",
-									"Ovewrite file", JOptionPane.YES_NO_OPTION,
-									JOptionPane.WARNING_MESSAGE);
-							if (response == JOptionPane.NO_OPTION) {
-								continue;
-							}
-						}
-						saveToFile = selectedFile;
-					} else {
-						return;
-					}
-				}
-				// write the log to the file
-				FileWriter out = null;
-				try {
-					out = new FileWriter(saveToFile, false);
-					for (Component c : tabbedPane.getComponents()) {
-						JSplitPane splitPane = (JSplitPane) c;
-						JScrollPane scrollPane = (JScrollPane) splitPane.getRightComponent();
-						JTextPane textArea = (JTextPane) scrollPane.getViewport().getView();
-						textArea.write(out);
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					if (out != null) {
-						try {
-							out.close();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-		});
 	}
 
 }
