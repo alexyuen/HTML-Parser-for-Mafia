@@ -84,8 +84,8 @@ public class MafiaView extends JFrame {
 	//String thread = "https://www.bluehellproductions.com/forum/index.php?showtopic=25603"; // Nodlied's game
 
 	// ELP
-	String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316"; // Hylius's game
-	//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3415"; // Westy's game
+	//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316"; // Hylius's game
+	String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3415"; // Westy's game
 
 	/**
 	 * Launch the application.

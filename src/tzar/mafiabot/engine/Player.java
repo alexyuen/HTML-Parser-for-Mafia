@@ -6,6 +6,7 @@ public class Player implements Comparable<Player> {
 	// implement events?
 	private String name = null;
 	private boolean isNpc = false;
+	private boolean canVote = true;
 
 	private Player vote = null;
 	private ArrayList<Player> voters = new ArrayList<Player>();
@@ -56,6 +57,14 @@ public class Player implements Comparable<Player> {
 	
 	public void resurrect() {
 		dayOfDeath = -1;
+	}
+	
+	public boolean canVote() {
+		return canVote;
+	}
+	
+	public void allowVote(boolean canVote) {
+		this.canVote = canVote;
 	}
 	
 	public boolean isAlive() {

@@ -322,6 +322,10 @@ public class Parser {
 							actors.removePlayer(parameter);
 						} else if (command.matches("##add((metaclass)|(npc))")) {
 							actors.addNpc(parameter);
+						} else if (command.matches("##takevote")) {
+							actors.takeVote(parameter);
+						} else if (command.matches("##givevote")) {
+							actors.giveVote(parameter);
 						} else if (command.equals("##strikevote")) {
 							actors.unvote(parameter);
 						} else if (command.equals("##pardon")) {

@@ -79,15 +79,14 @@ public class Actors {
 	}
 
 	public void addPlayer(String name) {
-		// check if a player with this name already exists
-		//Player player = aliasMap.get(name);
-		Player player = getPlayerFuzzy(name);
+		// check if a player with this exact name already exists
+		Player player = aliasPlayerMap.get(name);
 		if (player != null) {
-			//System.out.println("(!) " + player.getName() + " is already in the game.");
+			System.out.println("(!) " + player.getName() + " is already in the game.");
 			return;
 		}
 
-		// check for other aliases or name misspellings
+		// check for name misspellings or other aliases given in the aliases xml
 		String[] matchedLine = null;
 		String matchedName = name;
 		double matchedPercent = 0;
@@ -155,6 +154,10 @@ public class Actors {
 		// check if the voter is playing and alive
 		Player v = getPlayerFuzzy(voter);
 		if (v != null && v.isAlive()) {
+			if (!v.canVote()) {
+				System.out.println("Ignored vote from " + v.getName() + ".");
+				return;
+			}
 			// get the lynch candidate with a fuzzy string search
 			Player c = getPlayerFuzzy(candidate);
 			// if the candidate exists
@@ -234,6 +237,22 @@ public class Actors {
 			}
 		} else { 
 			System.out.println("(x) Resurrect failed: " + name + " was not found.");
+		}
+	}
+	
+	public void takeVote(String name) {
+		Player p = getPlayerFuzzy(name);
+		if (p != null) {
+			p.allowVote(false);
+			System.out.println("Removed " + p.getName() +"'s ability to vote!");
+		}
+	}
+	
+	public void giveVote(String name) {
+		Player p = getPlayerFuzzy(name);
+		if (p != null) {
+			p.allowVote(true);
+			System.out.println("Reinstated " + p.getName() +"'s ability to vote!");
 		}
 	}
 
