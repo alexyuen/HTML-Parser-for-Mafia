@@ -1,137 +1,157 @@
 package tzar.mafiabot.engine;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class Player implements Comparable<Player> {
 	// implement events?
 	private String name = null;
-	private boolean isNpc = false;
-	private boolean canVote = true;
 
-	private Player vote = null;
+	private boolean canVote = true;
+	private boolean canBeVoted = true;
+
+	// npcs do not contribute to hammer, aren't displayed when they don't vote, and aren't displayed in the post count
+	private boolean showInVoteCount = true;
+	private boolean showInPostCount = true;
+
+	private int voteNum = 1;
+	private int voteWeight = 1;
+	private LinkedList<Player> votes = new LinkedList<Player>();
 	private ArrayList<Player> voters = new ArrayList<Player>();
 
-	private int[] posts = new int[16]; //hardcoded limit of 15 days for now
-	private ArrayList<Integer> postLength = new ArrayList<Integer>();
-	private int dayOfDeath = -1;
+	private ArrayList<Integer> postCount = new ArrayList<Integer>();
+	private int cumulativePostLength = 0;
+	private int expiryDate = -1;
 
-	
+
 	public Player(String name) {
-		this(name, false);
-	}
-	
-	public Player(String name, boolean isNpc) {
 		this.name = name;
-		this.isNpc = isNpc;
 	}
 
-	public boolean vote(Player candidate) {
-		if (candidate != null && !candidate.equals(vote)) {
-			unvote();
-			vote = candidate;
+	public void vote(Player candidate) {
+		votes.addLast(candidate);
+		while (votes.size() > voteNum) {
+			Player previous = votes.pollFirst();
+			while (previous.voters.remove(this));
+		}
+		for (int i = 0; i < voteWeight; i++) {
 			candidate.voters.add(this);
-			return true;
 		}
-		return false;
 	}
 
-	public boolean unvote() {
-		if (vote != null) {
-			vote.voters.remove(this);
-			vote = null;
-			return true;
+	public void unvote() {
+		// stop voting for everyone we are currently voting for
+		for (Player candidate : votes) {
+			// remove all occurrences of this object from the voters of the other object 
+			while (candidate.voters.remove(this));
 		}
-		return false;
+		votes.clear();
 	}
 
 	public void pardon() {
 		for (Player voter : voters) {
-			voter.vote = null;
+			while (voter.votes.remove(this));
 		}
 		voters.clear();
 	}
 
 	public void kill(int day) {
-		dayOfDeath = day;
+		expiryDate = day;
 	}
-	
+
 	public void resurrect() {
-		dayOfDeath = -1;
+		expiryDate = -1;
 	}
-	
-	public boolean canVote() {
-		return canVote;
-	}
-	
-	public void allowVote(boolean canVote) {
-		this.canVote = canVote;
-	}
-	
+
 	public boolean isAlive() {
-		return dayOfDeath == -1;
+		return expiryDate == -1;
 	}
-	
+
 	public boolean isVoting() {
-		return vote != null;
-	}
-	
-	public boolean isNpc() {
-		return isNpc;
+		return votes.size() > 0;
 	}
 
-	public void addPost(int day, int length) {
-		if (day > 0) {
-			posts[day] += 1;
-			posts[0] += 1;
-		}
-		postLength.add(length);
+	public boolean isVoting(Player p) {
+		return isVoting() && votes.contains(p);
 	}
 
-	public int getTotalPosts() {
-		return posts[0];
+	public boolean canVote() {
+		return this.canVote;
+	}
+
+	public boolean isVotable() {
+		return canBeVoted;
+	}
+
+	public void setVoteEligibility(boolean canVote, boolean canBeCandidate) {
+		this.canVote = canVote;
+		this.canBeVoted = canBeCandidate;
+	}
+
+	public boolean showInVoteCount() {
+		return this.showInVoteCount;
+	}
+
+	public boolean showInPostCount() {
+		return this.showInPostCount;
+	}
+
+	public void setCountVisiblity(boolean voteCount, boolean postCount) {
+		this.showInVoteCount = voteCount;
+		this.showInPostCount = postCount;
+	}
+
+	public int getVoteNum() {
+		return this.voteNum;
+	}
+
+	public int getVoteWeight() {
+		return this.voteWeight;
+	}
+
+	public void setVotePrestige(int num, int weight) {
+		this.voteNum = num;
+		this.voteWeight = weight;
 	}
 
 	public int getTotalVotes() {
 		return voters.size();
 	}
-	
-	public int getAvgPostLength() {
-		int sum = 0;
-		for (int i = 0; i < postLength.size(); i++) {
-			sum += postLength.get(i);
-		}
-		return sum / postLength.size() / 5;
-	}
-	
+
 	public String getVoters() {
 		return voters.toString();
 	}
 
-	public void printPostCount(int day) {
-		StringBuffer postCount = new StringBuffer(String.format("%-23s", name + ":"));
-		// print out the post count for each day
-		for (int i = 1; i <= day; i++) {
-			if (!isAlive() && i >= dayOfDeath) {
-				postCount.append(String.format("[†%3d] ", posts[i]));
-			} else {
-				postCount.append(String.format("[%4d] ", posts[i]));
-			}
+	public void addPost(int day, int length) {
+		cumulativePostLength += length;
+		while (postCount.size() <= day) {
+			postCount.add(0);
 		}
-		// print out total posts and avg length
-		if (!isAlive()) {
-			postCount.append(String.format("[†%4d] ", getTotalPosts()));
-			//postCount.append(String.format("[†%4d] ", getAvgPostLength()));
-		} else {
-			postCount.append(String.format("[%5d] ", getTotalPosts()));
-			//postCount.append(String.format("[%5d] ", getAvgPostLength()));
-		}
-		System.out.println(postCount.toString());
+		postCount.set(day, postCount.get(day) + 1);
+
 	}
+
+	public int getTotalPosts() {
+		int sum = 0;
+		for (int i : postCount) {
+			sum += i;
+		}
+		return sum;
+	}
+
+	public ArrayList<Integer> getPostCount() {
+		return postCount;
+	}
+
+	public int getAvgPostLength() {
+		return cumulativePostLength / getTotalPosts() / 5;
+	}
+
 
 	public String getName() {
 		return name;
 	}
-	
+
 	@Override
 	public String toString() {
 		return name;

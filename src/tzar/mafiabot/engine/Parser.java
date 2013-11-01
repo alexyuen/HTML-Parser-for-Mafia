@@ -91,10 +91,10 @@ public class Parser {
 
 		// parsing finished; display the vote and post count
 		if (actors != null) {
-			actors.printVoteCount("Current vote count " + (isNight ? "(Night " + night : "(Day " + day) + "):", hasPlayersList);
 			if (day > 0) {
 				actors.printPostCount(day);
 			}
+			actors.printVoteCount("Current vote count " + (isNight ? "(Night " + night : "(Day " + day) + "):", hasPlayersList);
 		}
 
 		if (day > 0) {
@@ -322,10 +322,16 @@ public class Parser {
 							actors.removePlayer(parameter);
 						} else if (command.matches("##add((metaclass)|(npc))")) {
 							actors.addNpc(parameter);
-						} else if (command.matches("##takevote")) {
+						} else if (command.equals("##takevote")) {
 							actors.takeVote(parameter);
-						} else if (command.matches("##givevote")) {
+						} else if (command.equals("##givevote")) {
 							actors.giveVote(parameter);
+						} else if (command.equals("##setvoteweight")) {
+							String[] params = parameter.split(" ");
+							actors.setVoteWeight(params[1], Integer.parseInt(params[0]));
+						} else if (command.equals("##setvotenum")) {
+							String[] params = parameter.split(" ");
+							actors.setVoteNum(params[1], Integer.parseInt(params[0]));
 						} else if (command.equals("##strikevote")) {
 							actors.unvote(parameter);
 						} else if (command.equals("##pardon")) {

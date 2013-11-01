@@ -1,5 +1,6 @@
 package tzar.mafiabot.engine;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,34 +17,45 @@ import tzar.mafiabot.util.FuzzyMatch;
 
 
 public class Actors {
-	// This TreeSet is a set of all the (unique) Player objects in the above TreeMap. 
-	// I know it's ugly needing to keep track of two objects like this, 
-	// but I haven't yet found a way to get unique keys from the TreeMap.
+	/**
+	 * This TreeSet keeps track of all the (unique) Player objects in the below TreeMap.
+	 * The TreeSet sorts its Player elements by name, in ascending order 
+	 */
+	// TODO find a way to extract all unique values from the TreeMap so I can get rid of this
 	private TreeSet<Player>	uniquePlayers = new TreeSet<Player>();
 
-	// This TreeMap is used to associate all aliases with their respective Player objects
-	// Each alias is a key in the TreeMap, with the Player object as its value 
-	// eg <"alias1", Player1>, <"alias2", Player1>
+	/** 
+	 * This TreeMap is used to associate all aliases with their respective Player objects.
+	 * Each alias is a key in the TreeMap, with the Player object as its value 
+	 * For example, <"alias1", Player1>, <"alias2", Player1>
+	 **/
 	private TreeMap<String, Player> aliasPlayerMap = new TreeMap<String, Player>(String.CASE_INSENSITIVE_ORDER);
 
-	// This is the Element for the root of the aliases XML document
-	private Element aliasDocument = Jsoup.parse(getClass().getClassLoader().getResourceAsStream("aliases.xml"), null, "aURI", Parser.xmlParser());
-
+	/**
+	 * This is the Element for the root of the aliases XML document
+	 */
+	private Element aliasDocument = null;
 
 	/**
 	 * Creates a new Actors object with default NPCs and no players
-	 * @throws Exception
 	 */
-	public Actors() throws Exception {
+	public Actors() {
+		try {
+			aliasDocument = Jsoup.parse(getClass().getClassLoader().getResourceAsStream("aliases.xml"), null, "aURI", Parser.xmlParser());
+		} catch (IOException e) {
+			System.err.println("Error reading aliases.xml. Continuing execution without aliases.");
+			aliasDocument = new Element(null, null);
+		}
 		addDefaultNpcs();
 	}
 
 	/**
-	 * Creates a new Actors object with default NPCs and starting players
-	 * @param players Players to start with
-	 * @throws Exception
+	 * Creates a new Actors object with default NPCs and the given players
+	 * @param players An array of names corresponding to the people who are playing
 	 */
 	public Actors(String[] players) throws Exception {
+		this();
+		
 		// add players and their aliases to the hash table
 		System.out.println();
 		for (String name : players) {
@@ -52,15 +64,18 @@ public class Actors {
 		System.out.println();
 		//System.out.printf("%nPlayers (%d): %s%n", uniquePlayers.size(), uniquePlayers.toString());
 		//System.out.printf("Aliases loaded (%d): %s%n%n", aliasPlayerMap.size(), aliasPlayerMap.toString());
-
-		// add default npcs and their aliases to the hash table
-		addDefaultNpcs();
 	}
 
+	/**
+	 * Reserves names of default npcs (such as No Vote)
+	 */
 	private void addDefaultNpcs() {
 		for (Element npcElement : aliasDocument.getElementsByTag("npc")) {
 			String[] names = npcElement.text().split(";");
-			Player npc = new Player(names[0], true);
+			Player npc = new Player(names[0]);
+			npc.setVoteEligibility(false, true);
+			npc.setCountVisiblity(false, false);
+
 			uniquePlayers.add(npc);
 			for (String name : names) {
 				aliasPlayerMap.put(name.trim(), npc);
@@ -69,7 +84,10 @@ public class Actors {
 	}
 
 	public void addNpc(String name) {
-		Player npc = new Player(name, true);
+		Player npc = new Player(name);
+		npc.setVoteEligibility(false, true);
+		npc.setCountVisiblity(false, false);
+
 		if (uniquePlayers.add(npc)) {
 			aliasPlayerMap.put(name.trim(), npc);
 			System.out.println("Added vote option " + name + " to the game.");
@@ -82,14 +100,14 @@ public class Actors {
 		// check if a player with this exact name already exists
 		Player player = aliasPlayerMap.get(name);
 		if (player != null) {
-			System.out.println("(!) " + player.getName() + " is already in the game.");
+			//System.out.println("(!) " + player.getName() + " is already in the game.");
 			return;
 		}
 
 		// check for name misspellings or other aliases given in the aliases xml
-		String[] matchedLine = null;
 		String matchedName = name;
 		double matchedPercent = 0;
+		String[] matchedLine = null;
 		// look at every alias element in the aliases xml
 		for (Element aliasesList : aliasDocument.getElementsByTag("alias")) {
 			// compare the given name to each name in the alias element
@@ -150,44 +168,39 @@ public class Actors {
 		}
 	}
 
-	public void vote(String voter, String candidate) {
+	public void vote(String voterName, String candidateName) {
 		// check if the voter is playing and alive
-		Player v = getPlayerFuzzy(voter);
-		if (v != null && v.isAlive()) {
-			if (!v.canVote()) {
-				System.out.println("Ignored vote from " + v.getName() + ".");
-				return;
-			}
-			// get the lynch candidate with a fuzzy string search
-			Player c = getPlayerFuzzy(candidate);
-			// if the candidate exists
-			if (c != null && c.isAlive()) {
-				if (v.vote(c)) {
-					StringBuffer result = new StringBuffer();
-					if (candidate.equalsIgnoreCase(c.getName())) {
-						result.append(String.format("%s voted for %s", voter, c.getName()));
-					} else {
-						result.append(String.format("%s voted for %s (%s)", voter, candidate, c.getName()));
-					}
-					if (c.getTotalVotes() >= getPlayersAlive().size() / 2 + 1) {
-						result.append(". HAMMER!!");
-						result.insert(0, "(!) ");
-					}
-					System.out.println(result.toString());
-				}
-			} else if (c == null) { // could not find player
-				System.out.printf("(x) Rejected vote from \"%s\" on unknown player \"%s\".%n", voter, candidate);
-			} else {
-				System.out.printf("(x) Rejected vote from \"%s\" on dead player \"%s\".%n", voter, candidate);
-			}
+		Player voter = getPlayerFuzzy(voterName);
+		if (voter == null) {
+			System.out.printf("(x) Rejected spectator vote from \"%s\" on \"%s\".%n", voterName, candidateName);
+		} else if (!voter.isAlive()) {
+			System.out.printf("(x) Rejected dead vote from \"%s\" on \"%s\".%n", voter, candidateName);
+		} else if (!voter.canVote()) {
+			System.out.println("Ignored vote from " + voter.getName() + ".");
 		} else {
-			System.out.printf("(x) Rejected spectator/dead vote from \"%s\" on \"%s\".%n", voter, candidate);
+			Player candidate = getPlayerFuzzy(candidateName);
+			if (candidate == null) { // could not find player
+				System.out.printf("(x) Rejected vote from \"%s\" on unknown player \"%s\".%n", voter, candidateName);
+			} else if (!candidate.isAlive()) {
+				System.out.printf("(x) Rejected vote from \"%s\" on dead player \"%s\".%n", voter, candidate);
+			} else if (!voter.isVoting(candidate)) {
+				voter.vote(candidate);
+
+				String output = String.format("%s voted for %s", voter, candidateName);
+				if (!candidate.getName().equalsIgnoreCase(candidateName)) {
+					output = output + " (" + candidate.getName() + ")";
+				}
+				if (candidate.getTotalVotes() >= getPlayersAlive().size() / 2 + 1) {
+					output = "(!) " + output + ". HAMMER!!"; 
+				}
+				System.out.println(output);
+			}
 		}
 	}
 
 	public void unvote(String voter) {
 		Player v = aliasPlayerMap.get(voter);
-		if (v != null && v.unvote()) {
+		if (v != null && v.isVoting()) {
 			System.out.printf("%s unvoted%n", voter);
 		}
 	}
@@ -239,23 +252,46 @@ public class Actors {
 			System.out.println("(x) Resurrect failed: " + name + " was not found.");
 		}
 	}
-	
+
 	public void takeVote(String name) {
 		Player p = getPlayerFuzzy(name);
 		if (p != null) {
-			p.allowVote(false);
+			p.setVoteEligibility(false, true);
 			System.out.println("Removed " + p.getName() +"'s ability to vote!");
-		}
-	}
-	
-	public void giveVote(String name) {
-		Player p = getPlayerFuzzy(name);
-		if (p != null) {
-			p.allowVote(true);
-			System.out.println("Reinstated " + p.getName() +"'s ability to vote!");
+		} else {
+			System.out.println("(x) Take vote failed: " + name + " was not found.");
 		}
 	}
 
+	public void giveVote(String name) {
+		Player p = getPlayerFuzzy(name);
+		if (p != null) {
+			p.setVoteEligibility(true, true);
+			System.out.println("Reinstated " + p.getName() +"'s ability to vote!");
+		} else {
+			System.out.println("(x) Give vote failed: " + name + " was not found.");
+		}
+	}
+
+	public void setVoteWeight(String name, int weight) {
+		Player p = getPlayerFuzzy(name);
+		if (p == null) {
+			System.out.println("(x) Set vote weight failed: " + name + " was not found.");
+		} else {
+			p.setVotePrestige(p.getVoteNum(), weight);
+		}
+	}
+
+	public void setVoteNum(String name, int num) {
+		Player p = getPlayerFuzzy(name);
+		if (p == null) {
+			System.out.println("(x) Set vote num failed: " + name + " was not found.");
+		} else {
+			p.setVotePrestige(num, p.getVoteWeight());
+		}
+	}
+
+	
 	public void addPost(String name, int day, int length) {
 		Player p = aliasPlayerMap.get(name);
 		if (p != null) {
@@ -263,37 +299,65 @@ public class Actors {
 		}
 	}
 
+	/**
+	 * Prints the post count
+	 * @param day
+	 */
 	public void printPostCount(int day) {
 		System.out.printf("%n[code]%n");
 		System.out.println("Post count:");
-		// print out the column header first
-		StringBuffer header = new StringBuffer(String.format("%-23s", " "));
-		for (int i = 1 ; i <= day; i++) {
-			header.append(String.format("[%4s] ", "D" + i));
+		// determine longest name for prettier output
+		int longestName = 0;
+		for (Player p : uniquePlayers) {
+			if (p.getName().length() > longestName) {
+				longestName = p.getName().length();
+			}
 		}
-		header.append("[Total]");
+		longestName += 3;
+		
+		// print out the column header first
+		String header = String.format("%-" + longestName + "s", " ");
+		for (int i = 1 ; i <= day; i++) {
+			header += String.format("[%3s] ", "D" + i);
+		}
+		header += "[Total]";
 		//header.append("[Total] [Avg Words/Post]");
 		System.out.println(header.toString());
-		// have to use an arraylist to sort by an unnatural order or else elements would get discarded
+		// have to use an arraylist to sort by an unnatural order or else players with equal posts would be discarded
 		ArrayList<Player> playersSortedByPosts = asSortedList(uniquePlayers, new SortByPosts());
 		for (Player p : playersSortedByPosts) {
-			if (!p.isNpc() || p.getTotalPosts() > 0) {
-				p.printPostCount(day);
+			if (p.showInPostCount() || p.getTotalPosts() > 0) {
+				// make sure the post count has a value for the current day
+				ArrayList<Integer> postCount = p.getPostCount();
+				while (postCount.size() <= day) {
+					postCount.add(0);
+				}
+				// print name
+				String result = String.format("%-" + longestName + "s", p.getName() + ":");
+				for (int i = 1; i <= day; i++) {
+					// print the post count for each day
+					result += String.format("[%3d] ", postCount.get(i));
+				}
+				// print total posts
+				result += String.format("[%4d] ", p.getTotalPosts());
+				//result += String.format("[%4d] ", p.getAvgPostLength());
+				System.out.println(result);
 			}
 		}
 		System.out.printf("[/code]%n%n");
 	}
 
+	/**
+	 * Prints the vote count
+	 * @param header
+	 * @param hasPlayerList
+	 */
 	public void printVoteCount(String header, boolean hasPlayerList) {
 		// print the header
-		System.out.printf("%n[code]" + header + "%n");
-
-		boolean votesCasted = false;
+		System.out.printf("%n[code]%n" + header + "%n");
+		
 		// get a list of all players alive
 		ArrayList<Player> allPlayersAlive = getPlayersAlive();
-
-		// Print out the number of votes required to hammer
-		//System.out.printf("Hammer falls at %d votes!%n", allPlayersAlive.size() / 2 + 1);
 
 		// sort the players by decreasing number of votes
 		ArrayList<Player> allPlayersSorted = asSortedList(uniquePlayers, new SortByVotes());
@@ -302,58 +366,65 @@ public class Actors {
 		TreeSet<Player> novotes = new TreeSet<Player>();
 
 		int hammer = allPlayersAlive.size() / 2 + 1;
-
+		boolean candidateExists = false;
+		
+		// determine longest name for prettier output
+		int longestName = 0;
+		for (Player p : allPlayersSorted) {
+			if (p.getTotalVotes() > 0 && p.getName().length() > longestName) {
+				longestName = p.getName().length();
+			}
+		}
+		longestName += 3;
+		
 		for (Player p : allPlayersSorted) {
 			// if the player has votes on him, print out the voters
 			if (p.getTotalVotes() > 0) {
-				votesCasted = true;
+				candidateExists = true;
 				if (hasPlayerList) {
-					//System.out.printf("%-20s %2d/%d %s%n", p.getName() + ":", p.getTotalVotes(), hammer, p.getVoters());
-					System.out.printf("(%d/%d) %s %s%n", p.getTotalVotes(), hammer, p.getName(), p.getVoters());
+					System.out.printf("(%d/%d) %-" + longestName + "s%s%n", p.getTotalVotes(), hammer, p.getName(), p.getVoters());
 				} else {
-					System.out.printf("(%d) %s %s%n", p.getTotalVotes(), p.getName(), p.getVoters());
+					System.out.printf("(%d) %-" + longestName + "s%s%n", p.getTotalVotes(), p.getName(), p.getVoters());
 				}
 			}
 			// if the player has not voted, add him to the list of non-voters
-			if (p.isAlive() && !p.isNpc() && !p.isVoting()) {
+			if (p.isAlive() && p.showInVoteCount() && !p.isVoting()) {
 				novotes.add(p);
 			}
+			
 		}
-
+		
+		// if the GM has given the bot a player list, print additional information
 		if (hasPlayerList) {
 			// list players with no votes
-			//System.out.printf("%-20s %2d %" + String.valueOf(hammer).length() + "s %s%n", "No vote:", novotes.size(), " ", (novotes.size() > 0 ? novotes.toString() : ""));
 			System.out.printf("(%d/%d) No vote: %s%n", novotes.size(), allPlayersAlive.size(), (novotes.size() > 0 ? novotes.toString() : ""));
 
 			// list the players that are alive
-			//System.out.printf("%nPlayers alive:\t%2d %s%n", allPlayersAlive.size(), allPlayersAlive.toString());
-			System.out.printf("%n%d players alive:%n", allPlayersAlive.size());
-			for (Player p : allPlayersAlive)
+			System.out.printf("%n%d players alive: %n", allPlayersAlive.size());
+			for (Player p : allPlayersAlive) {
 				System.out.println(p.getName());
+			}
 
 			// list the players that are dead
 			ArrayList<Player> allPlayersDead = getPlayersDead();
-
 			if (allPlayersDead.size() > 0) {
-				//System.out.printf("Players dead:\t%2d %s%n%n", allPlayersDead.size(), allPlayersDead.toString());
 				System.out.printf("%n%d players dead:%n", allPlayersDead.size());
-				for (Player p : allPlayersDead)
+				for (Player p : allPlayersDead) {
 					System.out.println(p.getName());
+				}
 			}
-		} else if (!votesCasted) {
-			System.out.printf("No votes have been cast.%n%n");
+		} else if (!candidateExists) {
+			System.out.println("No votes have been cast.");
 		}
 		System.out.println("[/code]\n");
 
 	}
 
-	/*
-	public String searchPlayerFuzzy(String name) {
-		Player p = getPlayerFuzzy(name);
-		return (p != null ? p.getName() : null);
-	}
+	/**
+	 * Does a fuzzy search for the player object corresponding to the given name
+	 * @param name The name of the player to search for
+	 * @return The Player object whose name is the closest match
 	 */
-
 	private Player getPlayerFuzzy(String name) {
 		Player matchedPlayer = aliasPlayerMap.get(name);
 		// check if an exact match for that alias exists
@@ -384,7 +455,9 @@ public class Actors {
 		return matchedPlayer;
 	}
 
-	// Returns a string containing the names of all unique players and npcs
+	/**
+	 * Returns a string containing the names of all unique players and npcs
+	 */
 	@Override
 	public String toString() {
 		return uniquePlayers.toString();
@@ -400,7 +473,7 @@ public class Actors {
 	private ArrayList<Player> getPlayersAlive() {
 		ArrayList<Player> playersAlive = new ArrayList<Player>();
 		for (Player p : uniquePlayers) {
-			if (p.isAlive() && !p.isNpc()) {
+			if (p.isAlive() && p.showInVoteCount()) {
 				playersAlive.add(p);
 			}
 		}
@@ -410,7 +483,7 @@ public class Actors {
 	private ArrayList<Player> getPlayersDead() {
 		ArrayList<Player> playersDead = new ArrayList<Player>();
 		for (Player p : uniquePlayers) {
-			if (!p.isAlive() && !p.isNpc()) {
+			if (!p.isAlive() && p.showInVoteCount()) {
 				playersDead.add(p);
 			}
 		}
@@ -418,8 +491,7 @@ public class Actors {
 	}
 
 	/**
-	 * Sorts a set in an unnatural order. An ArrayList is used because using a set means equal elements are discarded 
-	 * (eg players with equal votes)
+	 * Sorts a set in an unnatural order. Returns an ArrayList because a set means equal elements are discarded (eg players with equal votes)
 	 * @return An ArrayList containing the elements of the input set sorted by the order specified by the Comparator
 	 */
 	private <T> ArrayList<T> asSortedList(Set<T> base, Comparator<T> comparator) {
@@ -432,6 +504,7 @@ public class Actors {
 	private static class SortByPosts implements Comparator<Player> {
 		public int compare(Player p1, Player p2) {
 			/*
+			// list alive players before dead players
 			if (p1.isAlive() && !p2.isAlive()) {
 				return -1;
 			} else if (!p1.isAlive() && p2.isAlive()) {
@@ -447,19 +520,4 @@ public class Actors {
 			return p2.getTotalVotes() - p1.getTotalVotes();
 		}
 	}
-
-	/*
-	// code for generating jfreechart pie charts (if I ever use them)
-	private void generatePieChart(List<Player> players) {
-		DefaultPieDataset result = new DefaultPieDataset();
-		for (Player p : players) {
-				result.setValue(p.toString(), p.getTotalPosts());
-		}
-		JFreeChart chart = ChartFactory.createPieChart3D("Posts", result, true, true, false);
-		ChartFrame chartFrame = new ChartFrame(chart.getTitle().getText(), chart);
-		chartFrame.pack();
-		//chartFrame.setResizable(false);
-		chartFrame.setVisible(true);
-	}
-	 */
 }
