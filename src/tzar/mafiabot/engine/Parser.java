@@ -91,10 +91,10 @@ public class Parser {
 
 		// parsing finished; display the vote and post count
 		if (actors != null) {
+			actors.printVoteCount("Current vote count " + (isNight ? "(Night " + night : "(Day " + day) + "):", hasPlayersList);
 			if (day > 0) {
 				actors.printPostCount(day);
 			}
-			actors.printVoteCount("Current vote count " + (isNight ? "(Night " + night : "(Day " + day) + "):", hasPlayersList);
 		}
 
 		if (day > 0) {
@@ -230,23 +230,16 @@ public class Parser {
 				// search for multiple commands within the same bold tag
 				Matcher multipleCommands = commandsPattern.matcher(aBoldTag.text());
 				while (multipleCommands.find()) {
-					String action = multipleCommands.group().trim();
+					String action = multipleCommands.group().trim().replaceFirst("##\\s+", "##");
 
 					// split the input string into a array of two strings; element 1 is the ##command, element 2 contains the parameters
 					String[] tokens = action.split(" ", 2);
 					String command = tokens[0].toLowerCase();
 					String parameter = (tokens.length > 1 ? tokens[1] : null);
-					
-					// support for ## commands (has a space between ## and the command)
-					if (command.equals("##")) {
-						tokens = action.split(" ", 3);
-						command = command + tokens[1].toLowerCase();
-						parameter = (tokens.length > 2 ? tokens[2] : null);
-					}
 
 					// Player commands
 					if (actors != null) {
-						if (command.matches("##\\s?vote") && parameter != null) {
+						if (command.equals("##vote") && parameter != null) {
 							/*
 							if (day > 0 && !hasPlayersList) {
 								actors.addPlayer(parameter);
@@ -254,7 +247,7 @@ public class Parser {
 							*/
 							actors.vote(poster, parameter);
 							continue;
-						} else if (command.matches("##\\s?unvote")) {
+						} else if (command.equals("##unvote")) {
 							actors.unvote(poster);
 							continue;
 						} else if (!gms.contains(poster)) {
@@ -298,40 +291,41 @@ public class Parser {
 							} else {
 								hasPlayersList = true;
 							}
-							// support for advancing the day immediately
-							String[] multipleParams = parameter.split(" ");
-							if (multipleParams.length > 1 && multipleParams[1].trim().equalsIgnoreCase("NOW")) {
-								if (command.equals("##day")) {
-									newPhase(true, Integer.parseInt(multipleParams[0]));
-								} else {
-									newPhase(false,Integer.parseInt(multipleParams[0]));
-								}
-							} // otherwise end the day after all commands in this post have been resolved
-							else if (command.equals("##day")) {
-								// advance the day at the end of this post
-								newDay = Integer.parseInt(multipleParams[0]);
+							// End the current phase after all commands in this post have been resolved
+							if (command.equals("##day")) {
+								newDay = Integer.parseInt(parameter);
 							} else {
-								newNight = Integer.parseInt(multipleParams[0]);
+								newNight = Integer.parseInt(parameter);
 							}
 						} else if (actors == null) {
-							System.out.println("(!) Ignored action \"" + action + "\" from " + poster + " due to lack of ##players list.");
+							//System.out.println("(!) Ignored action \"" + action + "\" from " + poster + " due to lack of ##players list.");
 							continue;
 						} else if (command.matches("##add(player)?")) {
 							actors.addPlayer(parameter);
-						} else if (command.matches("##remove((player)|(metaclass)|(npc))?")) {
-							actors.removePlayer(parameter);
 						} else if (command.matches("##add((metaclass)|(npc))")) {
 							actors.addNpc(parameter);
-						} else if (command.equals("##takevote")) {
+						} else if (command.matches("##remove((player)|(metaclass)|(npc))?")) {
+							actors.removePlayer(parameter);
+						}  else if (command.equals("##takevote")) {
 							actors.takeVote(parameter);
 						} else if (command.equals("##givevote")) {
 							actors.giveVote(parameter);
 						} else if (command.equals("##setvoteweight")) {
-							String[] params = parameter.split(" ");
-							actors.setVoteWeight(params[1], Integer.parseInt(params[0]));
+							String[] params = parameter.split(" ", 2);
+							try {
+								int num = Integer.parseInt(params[0]);
+								actors.setVoteWeight(params[1], num);
+							} catch (NumberFormatException e) {
+								System.out.println("(!) Usage: ##setvoteweight <num> <player>");
+							}
 						} else if (command.equals("##setvotenum")) {
-							String[] params = parameter.split(" ");
-							actors.setVoteNum(params[1], Integer.parseInt(params[0]));
+							String[] params = parameter.split(" ", 2);
+							try {
+								int num = Integer.parseInt(params[0]);
+								actors.setVoteNum(params[1], num);
+							} catch (NumberFormatException e) {
+								System.out.println("(!) Usage: ##setvotenum <num> <player>");
+							}
 						} else if (command.equals("##strikevote")) {
 							actors.unvote(parameter);
 						} else if (command.equals("##pardon")) {

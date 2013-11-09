@@ -55,7 +55,7 @@ public class Actors {
 	 */
 	public Actors(String[] players) throws Exception {
 		this();
-		
+
 		// add players and their aliases to the hash table
 		System.out.println();
 		for (String name : players) {
@@ -67,7 +67,7 @@ public class Actors {
 	}
 
 	/**
-	 * Reserves names of default npcs (such as No Vote)
+	 * Adds default npcs (such as No Vote) to the game so they can be voted for.
 	 */
 	private void addDefaultNpcs() {
 		for (Element npcElement : aliasDocument.getElementsByTag("npc")) {
@@ -97,14 +97,20 @@ public class Actors {
 	}
 
 	public void addPlayer(String name) {
-		// check if a player with this exact name already exists
+		// check if a player with this exact name/alias already exists
 		Player player = aliasPlayerMap.get(name);
 		if (player != null) {
-			//System.out.println("(!) " + player.getName() + " is already in the game.");
 			return;
 		}
+		// otherwise, create a new player object for this player
+		player = new Player(name);
+		// add the given name to the aliases
+		aliasPlayerMap.put(name, player);
+		// add the player object to the set of unique players
+		uniquePlayers.add(player);
+		System.out.println(player.getName() + " was added to the game.");
 
-		// check for name misspellings or other aliases given in the aliases xml
+		// check the aliases.xml for matches/close matches and import other aliases
 		String matchedName = name;
 		double matchedPercent = 0;
 		String[] matchedLine = null;
@@ -125,28 +131,20 @@ public class Actors {
 				}
 			}
 		}
-		// create a new player object for this player
-		player = new Player(matchedName);
 
 		if (matchedLine != null) {
-			// put aliases into map
+			// aliases found
+			
+			// put aliases into map with the player object as its value
 			for (String aliasFound : matchedLine) {
 				aliasPlayerMap.put(aliasFound.trim(), player);
 			}
-			// aliases found
+			
 			if (matchedPercent != 1) {
-				System.out.println("Correcting " + name + " to " + matchedName + ".");
+				System.out.println("(?) Perhaps you meant " + matchedName + " instead of " + name + "?");
 			}
-			System.out.println("Imported aliases for " + matchedName + ": " + Arrays.asList(matchedLine).toString());
-
+			System.out.println("Imported aliases for " + player.getName() + ": " + Arrays.asList(matchedLine).toString());
 		}
-		// add the given name as the player's alias
-		// (for the case where the name wasn't found and just in case the spellcheck was wrong)
-		aliasPlayerMap.put(name, player);
-		// add the player object to the set of unique players
-		uniquePlayers.add(player);
-
-		System.err.println(player.getName() + " was added to the game.");
 	}
 
 	public void removePlayer(String name) {
@@ -201,6 +199,7 @@ public class Actors {
 	public void unvote(String voter) {
 		Player v = aliasPlayerMap.get(voter);
 		if (v != null && v.isVoting()) {
+			v.unvote();
 			System.out.printf("%s unvoted%n", voter);
 		}
 	}
@@ -279,6 +278,7 @@ public class Actors {
 			System.out.println("(x) Set vote weight failed: " + name + " was not found.");
 		} else {
 			p.setVotePrestige(p.getVoteNum(), weight);
+			System.out.println("Set " + p.getName() + "'s vote weight to " + weight);
 		}
 	}
 
@@ -288,20 +288,25 @@ public class Actors {
 			System.out.println("(x) Set vote num failed: " + name + " was not found.");
 		} else {
 			p.setVotePrestige(num, p.getVoteWeight());
+			System.out.println(p.getName() + " now has " + num + " votes.");
 		}
 	}
 
-	
+
 	public void addPost(String name, int day, int length) {
 		Player p = aliasPlayerMap.get(name);
+		if (p == null) {
+			p = getPlayerFuzzy(name);
+		} 
 		if (p != null) {
 			p.addPost(day, length);
 		}
 	}
 
 	/**
-	 * Prints the post count
-	 * @param day
+	 * Prints the post count. 
+	 * It will be displayed as a table, with the rows corresponding to each player, and columns indicating the day
+	 * @param day The number of days (columns) to display.
 	 */
 	public void printPostCount(int day) {
 		System.out.printf("%n[code]%n");
@@ -314,7 +319,7 @@ public class Actors {
 			}
 		}
 		longestName += 3;
-		
+
 		// print out the column header first
 		String header = String.format("%-" + longestName + "s", " ");
 		for (int i = 1 ; i <= day; i++) {
@@ -348,14 +353,14 @@ public class Actors {
 	}
 
 	/**
-	 * Prints the vote count
-	 * @param header
-	 * @param hasPlayerList
+	 * Prints the vote count.
+	 * @param header Additional information to display before the vote count is printed
+	 * @param hasPlayerList Has the GM provided a player list?
 	 */
 	public void printVoteCount(String header, boolean hasPlayerList) {
 		// print the header
 		System.out.printf("%n[code]%n" + header + "%n");
-		
+
 		// get a list of all players alive
 		ArrayList<Player> allPlayersAlive = getPlayersAlive();
 
@@ -367,7 +372,7 @@ public class Actors {
 
 		int hammer = allPlayersAlive.size() / 2 + 1;
 		boolean candidateExists = false;
-		
+
 		// determine longest name for prettier output
 		int longestName = 0;
 		for (Player p : allPlayersSorted) {
@@ -375,29 +380,29 @@ public class Actors {
 				longestName = p.getName().length();
 			}
 		}
-		longestName += 3;
-		
+		longestName += 2;
+
 		for (Player p : allPlayersSorted) {
 			// if the player has votes on him, print out the voters
 			if (p.getTotalVotes() > 0) {
 				candidateExists = true;
 				if (hasPlayerList) {
-					System.out.printf("(%d/%d) %-" + longestName + "s%s%n", p.getTotalVotes(), hammer, p.getName(), p.getVoters());
+					System.out.printf("(%d/%d) %-" + longestName + "s %s%n", p.getTotalVotes(), hammer, p.getName(), p.getVoters());
 				} else {
-					System.out.printf("(%d) %-" + longestName + "s%s%n", p.getTotalVotes(), p.getName(), p.getVoters());
+					System.out.printf("(%d) %-" + longestName + "s %s%n", p.getTotalVotes(), p.getName(), p.getVoters());
 				}
 			}
 			// if the player has not voted, add him to the list of non-voters
 			if (p.isAlive() && p.showInVoteCount() && !p.isVoting()) {
 				novotes.add(p);
 			}
-			
+
 		}
-		
+
 		// if the GM has given the bot a player list, print additional information
 		if (hasPlayerList) {
 			// list players with no votes
-			System.out.printf("(%d/%d) No vote: %s%n", novotes.size(), allPlayersAlive.size(), (novotes.size() > 0 ? novotes.toString() : ""));
+			System.out.printf("(%d/%d) %-" + longestName + "s %s%n", novotes.size(), allPlayersAlive.size(), "No vote:", novotes.toString());
 
 			// list the players that are alive
 			System.out.printf("%n%d players alive: %n", allPlayersAlive.size());
@@ -414,9 +419,9 @@ public class Actors {
 				}
 			}
 		} else if (!candidateExists) {
-			System.out.println("No votes have been cast.");
+			System.out.printf("No votes have been cast.%n");
 		}
-		System.out.println("[/code]\n");
+		System.out.printf("[/code]%n%n");
 
 	}
 
