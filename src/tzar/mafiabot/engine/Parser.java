@@ -84,7 +84,7 @@ public class Parser {
 			System.out.println("(Parse completed in " + (endTime - startTime) / 1000L + " seconds.)");
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out.println("An error has occured while parsing: " + e.toString());
+			System.out.println("(!) An error has occured while parsing: " + e.toString());
 			if (readingFromCache)
 				System.out.println("Try deleting the cache and reparsing to see if this error occurs again.");
 		}
@@ -115,8 +115,8 @@ public class Parser {
 				System.err.println("Added " + newPosts.size() + " new posts to the cache.");
 			} catch (Exception e) { 
 				e.printStackTrace();
-				System.out.println("An error has occured while writing to the cache: " + e.toString());
-				System.out.println("Try deleting the cache and reparsing to see if this error occurs again.");
+				System.out.println("(!) An error has occured while writing to the cache: " + e.toString());
+				System.out.println("(!) Try deleting the cache and reparse to see if this error occurs again.");
 			}
 		} else {
 			System.err.println("A cache file was not generated because the game has not yet started.");
@@ -128,7 +128,7 @@ public class Parser {
 	private void parse(String url) throws Exception {
 		System.err.println(url);
 		//load the page
-		final Element thisThreadPage = (readingFromCache ? Jsoup.parse(cacheFile, null) : Jsoup.connect(url).timeout(20000).get());
+		final Element thisThreadPage = (readingFromCache ? Jsoup.parse(cacheFile, null) : Jsoup.connect(url).userAgent("Mozilla").timeout(20000).get());
 
 		// update the GUI progress bar
 		//Element progress = thisThreadPage.select("a[href=#]:matchesOwn("+pageOfPattern.pattern()+")").first();
@@ -199,6 +199,7 @@ public class Parser {
 			}
 
 			// try to determine phase change if the GM does not use any of the ## commands at all
+			
 			if (!hasPlayersList) {
 				if (gms.contains(poster)) {
 					// look at all elements in the post that contain "day \d+" or "night \d+"
@@ -225,6 +226,7 @@ public class Parser {
 					actors.addPlayer(poster);
 				}
 			}
+			
 			// find all the bold tags in this post
 			for (Element aBoldTag : allBoldTagsInThisPost) {
 				// search for multiple commands within the same bold tag
@@ -265,17 +267,18 @@ public class Parser {
 					if (gms.contains(poster)) {
 						if (parameter == null) {
 							// all commands with no required parameters go here
-							if (command.equals("##purgevotes")) {
+							if (command.equals("##purgevotes") && actors != null) {
 								actors.clearVotes();
 							} else {
-								System.out.println("(!) Error: No parameters were given for command " + command);
+								System.out.println("(!) Attention: No parameters were given for command " + command);
 							}
 						} else if (command.equals("##players") && !hasPlayersList) {
 							//System.out.printf("Players list found: ");
 							// get the html of the ##players list
 							TextNode t = TextNode.createFromEncoded(aBoldTag.html(), "aURI");
+							System.out.println(t.text().toString());
 							// make an array with each element containing a player name
-							String[] playerList = t.getWholeText().split("<br />\\s*");
+							String[] playerList = t.text().split("<br>\\s*");
 							// create the internal player list using the array
 							actors = new Actors(Arrays.copyOfRange(playerList, 1, playerList.length));
 							hasPlayersList = true;
@@ -289,7 +292,7 @@ public class Parser {
 								actors = new Actors();
 								hasPlayersList = false;
 							} else {
-								hasPlayersList = true;
+								//hasPlayersList = true;
 							}
 							// End the current phase after all commands in this post have been resolved
 							if (command.equals("##day")) {
