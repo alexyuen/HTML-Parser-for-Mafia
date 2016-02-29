@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,7 +22,7 @@ public class Parser {
 	private static Pattern postNumberPattern = Pattern.compile(".*\\W(p=?|entry)(\\d+).*");
 	private static Pattern commandsPattern = Pattern.compile("##\\s?\\w+[^#]*");
 
-	private static final Pattern dayNightHack = Pattern.compile("(?i)\\b(day|night)\\s*(\\d+)");
+	private static final Pattern dayNightHack = Pattern.compile("(?i)\\b(day|night)\\s+(\\d+|\\w{3,})"); // |\\w{3,}
 
 	private final String thread, posts, author, post_content, bold_commands, next_button, post_edit;
 
@@ -46,7 +47,7 @@ public class Parser {
 		if (thread.contains("bluehell") || thread.contains("w3dhub")) {
 			posts = "div.post_block";
 			author = "span.author.vcard";
-			post_content = "div.post";
+			post_content = "div.post_body";
 			bold_commands = "strong:not(blockquote strong):not(strong blockquote):matches(" + commandsPattern.pattern() + ")";
 			next_button = "a[rel=next]";
 			post_edit = "p.edit";
@@ -128,7 +129,7 @@ public class Parser {
 	private void parse(String url) throws Exception {
 		System.err.println(url);
 		//load the page
-		final Element thisThreadPage = (readingFromCache ? Jsoup.parse(cacheFile, null) : Jsoup.connect(url).userAgent("Mozilla").timeout(20000).get());
+		final Element thisThreadPage = (readingFromCache ? Jsoup.parse(cacheFile, null) : Jsoup.connect(url).userAgent("Mozilla").timeout(10000).get());
 
 		// update the GUI progress bar
 		//Element progress = thisThreadPage.select("a[href=#]:matchesOwn("+pageOfPattern.pattern()+")").first();
@@ -204,7 +205,22 @@ public class Parser {
 							System.out.println("Grabbing players as we go along...");
 							actors = new Actors();
 						}
-						int num = Integer.parseInt(m.group(2));
+						int num;
+						try {
+							num = Integer.parseInt(m.group(2));
+						} catch (NumberFormatException e) {
+							// try converting to number from word
+							HashMap<String,Integer> map = new HashMap<String,Integer>();
+							map.put("one",1); map.put("two",2);  map.put("three",3);  map.put("four",4);
+							map.put("five",5);  map.put("six",6);  map.put("seven",7);  map.put("eight",8);
+							map.put("nine",9);  map.put("ten",10);  map.put("eleven",11);  map.put("twelve", 12);
+							map.put("thirteen",13);  map.put("fourteen",14);  map.put("fifteen",15);  map.put("sixteen",16);
+							if (map.get(m.group(2).toLowerCase()) != null) {
+								num = map.get(m.group(2).toLowerCase());
+							} else { // not a number
+								continue;
+							}
+						}
 						if (m.group(1).equalsIgnoreCase("day") && num > cycle.today()) {
 							cycle.setNextDay(num);
 						} else if (m.group(1).equalsIgnoreCase("night") && num > cycle.tonight()) {
