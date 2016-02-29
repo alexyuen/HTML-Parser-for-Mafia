@@ -22,6 +22,7 @@ If you are a Game Moderator and would like to use this tool, feel free to messag
 Simply ensure your players use bolded votes like so: **##vote Alex**
 
 Players can remove their vote with a bolded **##unvote**
+Unvoting is optional. Players do not need to unvote before voting for someone else.
 
 This is all you need to see vote counts and post counts within the app. If you would like the app to keep track of additional items, you may use the following advanced commands.
 
