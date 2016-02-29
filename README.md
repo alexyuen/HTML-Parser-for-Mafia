@@ -27,7 +27,7 @@ Players can remove their vote with a bolded **##unvote**
 
 Unvoting is optional. Players do not need to unvote before voting for someone else.
 
-The application will count all the **bolded** votes and display a talley.
+The application will count all the **bolded** votes and display a tally.
 
 # Usage (advanced): #
 
