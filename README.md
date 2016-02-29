@@ -1,4 +1,6 @@
-This Java application helps users manage and moderate online Mafia games. The application parses HTML in a forum thread, keeping track of custom mafia commands and generating information such as vote counts and post counts. The primary goal of this tool is to assist Game Moderators in managing and keeping track of their games; it is not a substitute for actual policing! Game Moderators should still be actively monitoring their game thread.
+This Java application helps users manage and moderate online Mafia games. It connects to a forum thread and parses the HTML, keeping track of custom mafia commands and generating information such as vote counts and post counts. 
+
+The primary goal of this tool is to assist Game Moderators in managing and keeping track of their games; it is not a substitute for actual policing! Game Moderators should still be actively monitoring their game thread.
 
 If you are a Game Moderator and would like to use this tool, feel free to message me with a link to your mafia thread and I’ll send you a download link.
 
@@ -25,9 +27,11 @@ Players can remove their vote with a bolded **##unvote**
 
 Unvoting is optional. Players do not need to unvote before voting for someone else.
 
-This is all you need to see vote counts and post counts within the app. If you would like the app to keep track of additional items, you may use the following advanced commands.
+The application will count all the **bolded** votes and display a talley.
 
 # Usage (advanced): #
+
+The following commands are optional but are provided to you for greater control over the game.
 
 * **##kill <player>** - Kills the player. Dead players are not allowed to vote and cannot be voted upon. Active votes made by or made on the dead player are removed.
 
