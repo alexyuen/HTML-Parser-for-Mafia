@@ -78,15 +78,15 @@ public class MafiaView extends JFrame {
 	//String thread = "http://www.mlponies.com/forums/viewtopic.php?f=6&t=2151";	// Chunky's CYOR
 	//String thread = "http://www.roundstable.com/forums/viewtopic.php?f=6&t=3158"; // Sharkmafia's game (no bot support)
 
-	// BHP (broken)
+	// BHP
 	//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25403"; // Glaed's game
 	//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25548"; // Westy's game
 	//String thread = "https://www.bluehellproductions.com/forum/index.php?showtopic=25603"; // Nodlied's game
+	String thread = "https://secure.w3dhub.com/forum/index.php?s=f40a222bdf2d20ddcd14f862b482d759&showtopic=415598";
 
 	// ELP
 	//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316"; // Hylius's game
 	//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3415"; // Westy's game
-	String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3620"; // iLTS's game
 
 	/**
 	 * Launch the application.

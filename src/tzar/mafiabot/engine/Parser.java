@@ -17,11 +17,11 @@ import tzar.mafiabot.gui.MafiaView;
 
 
 public class Parser {
-	private static final Pattern pageOfPattern = Pattern.compile("Page\\s(\\d+)\\sof\\s(\\d+)"); //ie Page 1 of 2
-	private static final Pattern postNumberPattern = Pattern.compile(".*\\Wp=?(\\d+).*");
-	private static final Pattern commandsPattern = Pattern.compile("##\\s?\\w+[^#]*");
+	private static Pattern pageOfPattern = Pattern.compile("Page\\s(\\d+)\\sof\\s(\\d+)"); //ie Page 1 of 2
+	private static Pattern postNumberPattern = Pattern.compile(".*\\W(p=?|entry)(\\d+).*");
+	private static Pattern commandsPattern = Pattern.compile("##\\s?\\w+[^#]*");
 
-	private static final Pattern dayNightHack = Pattern.compile("(?i)(day|night)\\s*(\\d+)");
+	private static final Pattern dayNightHack = Pattern.compile("(?i)\\b(day|night)\\s*(\\d+)");
 
 	private final String thread, posts, author, post_content, bold_commands, next_button, post_edit;
 
@@ -45,13 +45,14 @@ public class Parser {
 		this.cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
 		this.view = view;
 		
-		if (thread.contains("bluehell")) {
+		if (thread.contains("bluehell") || thread.contains("w3dhub")) {
 			posts = "div.post_block";
-			author = "div.post_username";
+			author = "span.author.vcard";
 			post_content = "div.post";
-			bold_commands = "strong.bbc:not(.blockquote strong):not(strong .blockquote):matches(" + commandsPattern.pattern() + ")";
+			bold_commands = "strong:not(blockquote strong):not(strong blockquote):matches(" + commandsPattern.pattern() + ")";
 			next_button = "a[rel=next]";
 			post_edit = "p.edit";
+			//postNumberPattern = Pattern.compile(".*#entry(\\d+).*");
 		} else if (thread.contains("mlponies") || thread.contains("roundstable")) {
 			posts = "div.post";
 			author = "a[href^=./memberlist]";
@@ -81,7 +82,8 @@ public class Parser {
 			long startTime = System.currentTimeMillis();
 			parse(thread);
 			long endTime = System.currentTimeMillis();
-			System.out.println("(Parse completed in " + (endTime - startTime) / 1000L + " seconds.)");
+			System.out.println();
+			System.out.println("Parse completed in " + (endTime - startTime) / 1000L + " seconds.");
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println("(!) An error has occured while parsing: " + e.toString());
@@ -168,7 +170,7 @@ public class Parser {
 				//System.out.println(currentPostURL);
 				Matcher currentPostNumberMatcher = postNumberPattern.matcher(currentPostURL);
 				if (currentPostNumberMatcher.matches() && 
-						Integer.parseInt(currentPostNumberMatcher.group(1)) <= Integer.parseInt(postNumberMatcher.group(1))) {
+						Integer.parseInt(currentPostNumberMatcher.group(2)) <= Integer.parseInt(postNumberMatcher.group(2))) {
 					//System.out.println(currentPostNumberMatcher.group(1) + " " + postNumberMatcher.group(1));
 					// if the current post number <= post number in the URL, jump to the next post
 					continue;
@@ -185,6 +187,7 @@ public class Parser {
 			int newDay = 0, newNight = 0;
 
 			final String poster = post.select(author).first().text().trim();
+			//System.out.println(poster);
 			
 			Element postLink = post.select("a[href~="+ postNumberPattern.pattern() + "]:not("+post_content+" a)").last();
 			postLink.setBaseUri(thread);
