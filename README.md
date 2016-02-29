@@ -1,13 +1,60 @@
-# README #
+This Java application helps users manage and moderate online Mafia games. The application parses HTML in a forum thread, keeping track of custom mafia commands and generating information such as vote counts and post counts. The primary goal of this tool is to assist Game Moderators in managing and keeping track of their games; it is not a substitute for actual policing! Game Moderators should still be actively monitoring their game thread.
 
-This Java application parses HTML in a forum thread, keeping track of mafia-style commands and generating information such as vote counts and post counts.
+If you are a Game Moderator and would like to use this tool, feel free to message me with a link to your mafia thread and I’ll send you a download link.
 
-An in-depth user guide is available here: https://docs.google.com/document/d/1URv0ozD0kBYfDm3SmbY8_ceiXnIe_ofBzWlC_pQQ08c/pub
+# Features:#
+
+* No set-up required! Simply run the MafiaBot.jar file and the parser will do the rest!
+
+* Vote counts! (running tallies on votes made in the current phase)
+
+* Post counts! (tracks how many posts each player makes per day)
+
+* Nicknames & fuzzy name matching for votes!
+
+* Finds edited posts and provides a link to them
+
+* Displays an alert for player actions and provides a link to them
+
+* Thread caching! Parsed posts will be downloaded and saved to a file in the same directory as MafiaBot.jar; this makes subsequent runs much faster.
+
+# Usage (basic): #
+Simply ensure your players use bolded votes like so: **##vote Alex**
+
+Players can remove their vote with a bolded **##unvote**
+
+This is all you need to see vote counts and post counts within the app. If you would like the app to keep track of additional items, you may use the following advanced commands.
+
+# Usage (advanced): #
+
+* **##kill <player>** - Kills the player. Dead players are not allowed to vote and cannot be voted upon. Active votes made by or made on the dead player are removed.
+
+* **##resurrect <player>** - Resurrects the player so they can vote and be voted on again.
+
+* **##setvoteweight <player> <num>** - Changes the weight of a player’s vote. By default, every player has a vote weight of 1.
+
+* **##setvotenum <player> <num>** - Changes the number of votes a player has. By default, every player has one vote. To use their multiple votes, players simply ##vote multiple times; and ##unvote will remove all their votes. Players cannot stack multiple votes on one person.
+
+* **##takevote <player>** - Removes the player’s ability to vote until you give it back.
+
+* **##givevote <player>** - Reinstates the player’s ability to vote
+
+* **##strikevote <player>** - Forces the player to unvote
+
+* **##pardon <player>** - Removes all votes on a player
+
+* **##purgevotes** - Removes everyone’s votes
+
+* **##addplayer <player>** / ##removeplayer <player> - Adds / removes a player from the game. 
+
+* **##addnpc <name> / ##removenpc <name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
+
+* **##gm <name>** – Gives someone GM permissions so they can use the above GM commands. The thread maker is automatically granted GM permissions.
+
+
 
 ***
-
-Here is an example vote count:
-
+# Example vote count: #
 
 ```
 #!html
@@ -44,9 +91,7 @@ Zylo
 ```
 
 ***
-
-Here is an example post count:
-
+# Example post count: #
 
 ```
 #!html
