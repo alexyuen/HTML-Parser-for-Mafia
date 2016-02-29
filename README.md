@@ -51,7 +51,7 @@ The following commands are optional but are provided to you for greater control 
 
 * **##purgevotes** - Removes everyone’s votes
 
-* **##addplayer <player>** / ##removeplayer <player> - Adds / removes a player from the game. 
+* **##addplayer <player> / ##removeplayer <player>** - Adds / removes a player from the game. 
 
 * **##addnpc <name> / ##removenpc <name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
 
