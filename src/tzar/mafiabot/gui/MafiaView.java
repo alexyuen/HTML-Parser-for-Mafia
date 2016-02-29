@@ -80,9 +80,9 @@ public class MafiaView extends JFrame {
 
 	// BHP
 	//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25403"; // Glaed's game
-	//String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25548"; // Westy's game
+	String thread = "http://www.bluehellproductions.com/forum/index.php?showtopic=25548"; // Westy's game
 	//String thread = "https://www.bluehellproductions.com/forum/index.php?showtopic=25603"; // Nodlied's game
-	String thread = "https://secure.w3dhub.com/forum/index.php?s=f40a222bdf2d20ddcd14f862b482d759&showtopic=415598";
+	//String thread = "https://secure.w3dhub.com/forum/index.php?s=f40a222bdf2d20ddcd14f862b482d759&showtopic=415598";
 
 	// ELP
 	//String thread = "http://eridanipony.com/viewtopic.php?f=30&t=3316"; // Hylius's game

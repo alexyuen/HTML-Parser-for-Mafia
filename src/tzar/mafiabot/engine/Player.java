@@ -59,7 +59,7 @@ public class Player implements Comparable<Player> {
 		expiryDate = day;
 	}
 
-	public void resurrect() {
+	public void revive() {
 		expiryDate = -1;
 	}
 
