@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -22,7 +23,7 @@ public class Actors {
 	 * The TreeSet sorts its Player elements by name, in ascending order 
 	 */
 	// TODO find a way to extract all unique values from the TreeMap so I can get rid of this
-	private TreeSet<Player>	uniquePlayers = new TreeSet<Player>();
+	private TreeSet<Player>	allPlayers = new TreeSet<Player>();
 
 	/** 
 	 * This TreeMap is used to associate all aliases with their respective Player objects.
@@ -76,7 +77,7 @@ public class Actors {
 			npc.setVoteEligibility(false, true);
 			npc.setCountVisiblity(false, false);
 
-			uniquePlayers.add(npc);
+			allPlayers.add(npc);
 			for (String name : names) {
 				aliasPlayerMap.put(name.trim(), npc);
 			}
@@ -88,7 +89,7 @@ public class Actors {
 		npc.setVoteEligibility(false, true);
 		npc.setCountVisiblity(false, false);
 
-		if (uniquePlayers.add(npc)) {
+		if (allPlayers.add(npc)) {
 			aliasPlayerMap.put(name.trim(), npc);
 			System.out.println("Added vote option " + name + " to the game.");
 		} else {
@@ -107,7 +108,7 @@ public class Actors {
 		// add the given name to the aliases
 		aliasPlayerMap.put(name, player);
 		// add the player object to the set of unique players
-		uniquePlayers.add(player);
+		allPlayers.add(player);
 		System.out.println(player.getName() + " was added to the game.");
 
 		// check the aliases.xml for matches/close matches and import other aliases
@@ -152,7 +153,7 @@ public class Actors {
 		if (p != null) {
 			p.unvote();
 			p.pardon();
-			uniquePlayers.remove(p);
+			allPlayers.remove(p);
 			aliasPlayerMap.remove(name);
 
 			// remove his other aliases from the map
@@ -205,7 +206,7 @@ public class Actors {
 	}
 
 	public void clearVotes() {
-		for (Player p : uniquePlayers) {
+		for (Player p : allPlayers) {
 			p.pardon();
 		}
 		System.out.println("\nAll votes have been cleared.\n");
@@ -282,10 +283,10 @@ public class Actors {
 		}
 	}
 
-	public void setVoteNum(String name, int num) {
+	public void setMultiVote(String name, int num) {
 		Player p = getPlayerFuzzy(name);
 		if (p == null) {
-			System.out.println("(x) Set vote num failed: " + name + " was not found.");
+			System.out.println("(x) Set multi vote failed: " + name + " was not found.");
 		} else {
 			p.setVotePrestige(num, p.getVoteWeight());
 			System.out.println(p.getName() + " now has " + num + " votes.");
@@ -313,7 +314,7 @@ public class Actors {
 		System.out.println("Post count:");
 		// determine longest name for prettier output
 		int longestName = 0;
-		for (Player p : uniquePlayers) {
+		for (Player p : allPlayers) {
 			if (p.getName().length() > longestName) {
 				longestName = p.getName().length();
 			}
@@ -328,8 +329,9 @@ public class Actors {
 		header += "[Total]";
 		//header.append("[Total] [Avg Words/Post]");
 		System.out.println(header.toString());
-		// have to use an arraylist to sort by an unnatural order or else players with equal posts would be discarded
-		ArrayList<Player> playersSortedByPosts = asSortedList(uniquePlayers, new SortByPosts());
+		// an arraylist is used to sort by an unnatural order or else players with equal posts would be discarded
+		//ArrayList<Player> playersSortedByPosts = asSortedList(uniquePlayers, new SortByPosts());
+		ArrayList<Player> playersSortedByPosts = asSortedList(allPlayers, (Player p1, Player p2) -> { return p2.getTotalPosts() - p1.getTotalPosts(); });
 		for (Player p : playersSortedByPosts) {
 			if (p.showInPostCount() || p.getTotalPosts() > 0) {
 				// make sure the post count has a value for the current day
@@ -365,7 +367,8 @@ public class Actors {
 		ArrayList<Player> allPlayersAlive = getPlayersAlive();
 
 		// sort the players by decreasing number of votes
-		ArrayList<Player> allPlayersSorted = asSortedList(uniquePlayers, new SortByVotes());
+		//ArrayList<Player> allPlayersSorted = asSortedList(uniquePlayers, new SortByVotes());
+		ArrayList<Player> playersSortedByVotes = asSortedList(allPlayers, (p1, p2) -> { return p2.getTotalVotes() - p1.getTotalVotes(); });
 
 		// keep a list of non-voters
 		TreeSet<Player> novotes = new TreeSet<Player>();
@@ -375,14 +378,14 @@ public class Actors {
 
 		// determine longest name for prettier output
 		int longestName = 0;
-		for (Player p : allPlayersSorted) {
+		for (Player p : playersSortedByVotes) {
 			if (p.getTotalVotes() > 0 && p.getName().length() > longestName) {
 				longestName = p.getName().length();
 			}
 		}
 		longestName += 2;
 
-		for (Player p : allPlayersSorted) {
+		for (Player p : playersSortedByVotes) {
 			// if the player has votes on him, print out the voters
 			if (p.getTotalVotes() > 0) {
 				candidateExists = true;
@@ -465,34 +468,32 @@ public class Actors {
 	 */
 	@Override
 	public String toString() {
-		return uniquePlayers.toString();
+		return allPlayers.toString();
 	}
 
 	public void printPlayers() {
 		ArrayList<Player> players = getPlayersAlive();
-		System.err.println("Players alive at day start: " + players.size() + " " + players.toString());
+		System.err.println("Players alive at phase start: " + players.size() + " " + players.toString());
 		players = getPlayersDead();
-		System.err.println("Players dead at day start: " + players.size() + " " + players.toString());
+		System.err.println("Players dead at phase start: " + players.size() + " " + players.toString());
 	}
 
 	private ArrayList<Player> getPlayersAlive() {
-		ArrayList<Player> playersAlive = new ArrayList<Player>();
-		for (Player p : uniquePlayers) {
-			if (p.isAlive() && p.showInVoteCount()) {
-				playersAlive.add(p);
-			}
-		}
-		return playersAlive;
+		return getPlayers((Player p) -> p.isAlive() && p.showInVoteCount() );
 	}
 
 	private ArrayList<Player> getPlayersDead() {
-		ArrayList<Player> playersDead = new ArrayList<Player>();
-		for (Player p : uniquePlayers) {
-			if (!p.isAlive() && p.showInVoteCount()) {
-				playersDead.add(p);
+		return getPlayers((Player p) -> !p.isAlive() && p.showInVoteCount() );
+	}
+	
+	private ArrayList<Player> getPlayers(Predicate<Player> pred) {
+		ArrayList<Player> players = new ArrayList<Player>();
+		for (Player p : allPlayers) {
+			if (pred.test(p)) {
+				players.add(p);
 			}
 		}
-		return playersDead;
+		return players;
 	}
 
 	/**

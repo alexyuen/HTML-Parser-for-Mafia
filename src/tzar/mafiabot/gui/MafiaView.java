@@ -161,18 +161,10 @@ public class MafiaView extends JFrame {
 		progressBar.setStringPainted(true);
 		contentPanel.add(progressBar, "cell 0 3,growx,aligny center");
 		btnStop.setEnabled(false);
-		btnStop.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				parseCompleted();
-			}
-		});
+		btnStop.addActionListener(event -> { parseCompleted(); });
 		contentPanel.add(btnStop, "cell 0 4,growx,aligny center");
 		btnReparse.setEnabled(false);
-		btnReparse.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				reparse();
-			}
-		});
+		btnReparse.addActionListener(event -> { reparse(); } );
 		contentPanel.add(btnReparse, "cell 0 5,growx,aligny center");
 		btnDeleteCacheAndReparse.setEnabled(false);
 		btnDeleteCacheAndReparse.addActionListener(new ActionListener() {
