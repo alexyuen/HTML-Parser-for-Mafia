@@ -403,27 +403,29 @@ public class Actors {
 		}
 
 		// if the GM has given the bot a player list, print additional information
-		if (hasPlayerList) {
-			// list players with no votes
-			System.out.printf("(%d/%d) %-" + longestName + "s %s%n", novotes.size(), allPlayersAlive.size(), "No vote:", novotes.toString());
+		
+		// list players with no votes
+		System.out.printf("(%d) %-" + longestName + "s %s%n", novotes.size(), "No vote", novotes.toString());
 
-			// list the players that are alive
-			System.out.printf("%n%d players alive: %n", allPlayersAlive.size());
-			for (Player p : allPlayersAlive) {
+		// list the players that are alive
+		System.out.printf("%n%d players alive: %n", allPlayersAlive.size());
+		for (Player p : allPlayersAlive) {
+			System.out.println(p.getName());
+		}
+
+		// list the players that are dead
+		ArrayList<Player> allPlayersDead = getPlayersDead();
+		if (allPlayersDead.size() > 0) {
+			System.out.printf("%n%d players dead:%n", allPlayersDead.size());
+			for (Player p : allPlayersDead) {
 				System.out.println(p.getName());
 			}
-
-			// list the players that are dead
-			ArrayList<Player> allPlayersDead = getPlayersDead();
-			if (allPlayersDead.size() > 0) {
-				System.out.printf("%n%d players dead:%n", allPlayersDead.size());
-				for (Player p : allPlayersDead) {
-					System.out.println(p.getName());
-				}
-			}
-		} else if (!candidateExists) {
-			System.out.printf("No votes have been cast.%n");
 		}
+		
+		if (!candidateExists) {
+			System.out.printf("Zero votes have been cast.%n");
+		}
+		
 		System.out.printf("[/code]%n%n");
 
 	}

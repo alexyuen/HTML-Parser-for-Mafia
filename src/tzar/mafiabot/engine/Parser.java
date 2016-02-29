@@ -37,14 +37,14 @@ public class Parser {
 	private Elements newPosts = new Elements();
 
 	private boolean hasPlayersList = false;
-	
+
 	private MafiaView view = null;
 
 	public Parser(String thread, MafiaView view) {
 		this.thread = thread;
 		this.cacheFile = new File("MafiaBot-" + thread.hashCode() + ".cache");
 		this.view = view;
-		
+
 		if (thread.contains("bluehell") || thread.contains("w3dhub")) {
 			posts = "div.post_block";
 			author = "span.author.vcard";
@@ -188,7 +188,7 @@ public class Parser {
 
 			final String poster = post.select(author).first().text().trim();
 			//System.out.println(poster);
-			
+
 			Element postLink = post.select("a[href~="+ postNumberPattern.pattern() + "]:not("+post_content+" a)").last();
 			postLink.setBaseUri(thread);
 			String postURL = postLink.absUrl("href");
@@ -202,34 +202,34 @@ public class Parser {
 			}
 
 			// try to determine phase change if the GM does not use any of the ## commands at all
-			
+
 			if (!hasPlayersList) {
 				if (gms.contains(poster)) {
 					// look at all elements in the post that contain "day \d+" or "night \d+"
 					next:
-					for (Element nextDay : postContent.getElementsMatchingOwnText(dayNightHack.pattern())) {
-						Matcher m = dayNightHack.matcher(nextDay.text());
-						while (m.find()) {
-							// a new phase was found
-							if (actors == null) {
-								// if there was no actors yet, create one
-								actors = new Actors();
+						for (Element nextDay : postContent.getElementsMatchingOwnText(dayNightHack.pattern())) {
+							Matcher m = dayNightHack.matcher(nextDay.text());
+							while (m.find()) {
+								// a new phase was found
+								if (actors == null) {
+									System.out.println("Grabbing players as we go along...");
+									actors = new Actors();
+								}
+								System.err.println(nextDay.text());
+								int num = Integer.parseInt(m.group(2));
+								if (m.group(1).equalsIgnoreCase("day") && num > day) {
+									newDay = num;
+								} else if (m.group(1).equalsIgnoreCase("night") && num > night) {
+									newNight = num;
+								}
+								break next;
 							}
-							System.err.println(nextDay.text());
-							int num = Integer.parseInt(m.group(2));
-							if (m.group(1).equalsIgnoreCase("day") && num > day) {
-								newDay = num;
-							} else if (m.group(1).equalsIgnoreCase("night") && num > night) {
-								newNight = num;
-							}
-							break next;
 						}
-					}
 				} else if (actors != null) {
 					actors.addPlayer(poster);
 				}
 			}
-			
+
 			// find all the bold tags in this post
 			for (Element aBoldTag : allBoldTagsInThisPost) {
 				// search for multiple commands within the same bold tag
@@ -249,7 +249,7 @@ public class Parser {
 							if (day > 0 && !hasPlayersList) {
 								actors.addPlayer(parameter);
 							}
-							*/
+							 */
 							actors.vote(poster, args);
 							continue;
 						} else if (command.equals("##unvote")) {
@@ -266,17 +266,22 @@ public class Parser {
 					}
 
 					// GM commands
-					
+
 					if (gms.contains(poster)) {
 						if (args == null) {
 							// all commands with no required parameters go here
-							if (command.equals("##purgevotes") && actors != null) {
-								actors.clearVotes();
-							} else {
+
+							switch(command) {
+							case "##purgevotes":
+								if (actors != null) {
+									actors.clearVotes();
+								}
+								break;
+							default:
 								System.out.println("(!) Attention: No parameters were given for command " + command);
 							}
 						} else {
-							
+
 							switch (command) {
 							case "##players":
 								if (!hasPlayersList) {
@@ -294,10 +299,10 @@ public class Parser {
 							case "##gm":
 								addGM(args);
 								break;
-							case "##removegm:":
+							case "##removegm":
 								removeGM(args);
 								break;
-								
+
 							case "##day":
 								newDay = Integer.parseInt(args);
 							case "##night":
@@ -312,32 +317,33 @@ public class Parser {
 								}
 								break;
 							}
-							
+
 							if (actors == null) continue;
-							
+
 							switch (command) {
 							case "##addplayer":
 								actors.addPlayer(args);
 								break;
-								
+
 							case "##addmetaclass":
 							case "##addnpc":
 								actors.addNpc(args);
 								break;
-								
+
 							case "##removeplayer":
 							case "##removemetaclass":
 							case "##removenpc":
 								actors.removePlayer(args);
 								break;
-								
+
 							case "##takevote":
 								actors.takeVote(args);
 								break;
-								
+
 							case "##givevote": 
 								actors.giveVote(args);
 								break;
+
 							case "##setvoteweight":
 								Matcher voteWeight = Pattern.compile("(\\.+)\\s+(\\d+)").matcher(args);
 								if (voteWeight.matches()) {
@@ -347,6 +353,7 @@ public class Parser {
 									System.out.println("(!) Usage: ##setvoteweight <player> <num>");
 								}
 								break;
+
 							case "##setmultivote":
 								Matcher multivote = Pattern.compile("(\\.+)\\s+(\\d+)").matcher(args);
 								if (multivote.matches()) {
@@ -356,47 +363,44 @@ public class Parser {
 									System.out.println("(!) Usage: ##setmultivote <player> <number of votes>");
 								}
 								break;
+
 							case "##strikevote":
 								actors.unvote(args);
 								break;
+
 							case "##pardon":
 								actors.pardon(args);
 								break;
+
 							case "##proxyvote":
 								String[] proxy = args.split(" ");
 								if (proxy.length == 2) {
 									actors.vote(proxy[0], proxy[1]); 
 								} else if (proxy.length > 2) {
-									// TODO: need to handle case where voter/candidate names are multiple words (use quotation marks?)
-									actors.vote(proxy[0], proxy[1]); 
+									// TODO: improve case where voter & candidate names are multiple words
+									actors.vote(proxy[0], proxy[proxy.length - 1]); 
 								} else {
 									System.out.println("(x) Proxyvote failed: Please specify someone to vote for.");
 								}
 								break;
+
 							case "##lynch":
-								delayedKill.add(args);
-								break;
 							case "##nk":
 								delayedKill.add(args);
 								break;
+
 							case "##tk":
 							case "##kill":
+							case "##suicide":
 								String name = actors.kill(args, day);
 								if (name != null) {
 									System.out.println(name + " was killed.");
 								}
 								break;
-							case "##suicide":
-								String suicide = actors.kill(args, day);
-								if (suicide != null) {
-									System.out.println(suicide + " suicided.");
-								}
-								break;
+								
 							case "##resurrect":
+							case "##revive":
 								actors.resurrect(args);
-								break;
-							case "##nightposts":
-								// TODO: implement counting nightposts
 								break;
 							default:
 								System.out.println("(!) Unrecognized GM command: " + action + " --> " + postURL);
@@ -442,7 +446,7 @@ public class Parser {
 					parse(nextButton.absUrl("href"));
 			}
 		}
-		
+
 		// otherwise do nothing
 	}
 
