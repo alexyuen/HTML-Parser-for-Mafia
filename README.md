@@ -1,6 +1,6 @@
 This Java application helps users manage and moderate online Mafia games. It connects to a forum thread and parses the HTML, keeping track of custom mafia commands and generating information such as vote counts and post counts. 
 
-The primary goal of this tool is to assist Game Moderators in managing and keeping track of their games; it is not a substitute for actual policing! Game Moderators should still be actively monitoring their game thread.
+The primary goal of this tool is to assist Game Moderators in managing and keeping track of their games. It is not a substitute for actual policing! Game Moderators should still be actively monitoring their game thread.
 
 If you are a Game Moderator and would like to use this tool, feel free to message me with a link to your mafia thread and I’ll send you a download link.
 
@@ -21,7 +21,7 @@ If you are a Game Moderator and would like to use this tool, feel free to messag
 * Thread caching! Parsed posts will be downloaded and saved to a file in the same directory as MafiaBot.jar; this makes subsequent runs much faster.
 
 # Usage (basic): #
-Simply ensure your players use bolded votes like so: **##vote Alex**
+Simply ensure your players post bolded votes like so: **##vote Alex**
 
 Players can remove their vote with a bolded **##unvote**
 
@@ -31,11 +31,11 @@ The application will count all the **bolded** votes and display a tally.
 
 # Usage (advanced): #
 
-The following commands are optional but are provided to you for greater control over the game.
+The following commands are optional but are provided to you for greater control over the game. 
 
 * **##kill <player>** - Kills the player. Dead players are not allowed to vote and cannot be voted upon. Active votes made by or made on the dead player are removed.
 
-* **##resurrect <player>** - Resurrects the player so they can vote and be voted on again.
+* **##revive <player>** - Revives the player so they can vote and be voted on again.
 
 * **##setvoteweight <player> <num>** - Changes the weight of a player’s vote. By default, every player has a vote weight of 1.
 
@@ -56,6 +56,8 @@ The following commands are optional but are provided to you for greater control 
 * **##addnpc <name> / ##removenpc <name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
 
 * **##gm <name>** – Gives someone GM permissions so they can use the above GM commands. The thread maker is automatically granted GM permissions.
+
+* **##<anything>** - Players can use this catch-all command (eg **##shoot Tim**) and it will be shown and linked within the app.
 
 
 
