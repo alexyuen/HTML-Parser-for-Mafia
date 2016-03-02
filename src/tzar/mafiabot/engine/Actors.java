@@ -1,19 +1,13 @@
 package tzar.mafiabot.engine;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.parser.Parser;
 
 import tzar.mafiabot.util.FuzzyMatch;
 
@@ -23,31 +17,12 @@ public class Actors {
 	 * This TreeSet keeps track of all the (unique) Player objects in the below TreeMap.
 	 * The TreeSet sorts its Player elements by name, in ascending order 
 	 */
-	// TODO find a way to extract all unique values from the TreeMap so I can get rid of this
 	private TreeSet<Player>	allPlayers = new TreeSet<Player>();
-
-	/** 
-	 * This TreeMap is used to associate all aliases with their respective Player objects.
-	 * Each alias is a key in the TreeMap, with the Player object as its value 
-	 * For example, <"alias1", Player1>, <"alias2", Player1>
-	 **/
-	private TreeMap<String, Player> aliasPlayerMap = new TreeMap<String, Player>(String.CASE_INSENSITIVE_ORDER);
-
-	/**
-	 * This is the Element for the root of the aliases XML document
-	 */
-	private Element aliasDocument = null;
 
 	/**
 	 * Creates a new Actors object with default NPCs and no players
 	 */
 	public Actors() {
-		try {
-			aliasDocument = Jsoup.parse(getClass().getClassLoader().getResourceAsStream("aliases.xml"), null, "aURI", Parser.xmlParser());
-		} catch (IOException e) {
-			System.err.println("Error reading aliases.xml. Continuing execution without aliases.");
-			aliasDocument = new Element(null, null);
-		}
 		addDefaultNpcs();
 	}
 
@@ -57,41 +32,25 @@ public class Actors {
 	 */
 	public Actors(String[] players) throws Exception {
 		this();
-
-		// add players and their aliases to the hash table
-		System.out.println();
 		for (String name : players) {
 			addPlayer(name);
 		}
-		System.out.println();
-		//System.out.printf("%nPlayers (%d): %s%n", uniquePlayers.size(), uniquePlayers.toString());
-		//System.out.printf("Aliases loaded (%d): %s%n%n", aliasPlayerMap.size(), aliasPlayerMap.toString());
 	}
 
-	/**
-	 * Adds default npcs (such as No Vote) to the game so they can be voted for.
-	 */
 	private void addDefaultNpcs() {
-		for (Element npcElement : aliasDocument.getElementsByTag("npc")) {
-			String[] names = npcElement.text().split(";");
-			Player npc = new Player(names[0]);
-			npc.setVoteEligibility(false, true);
-			npc.setCountVisiblity(false, false);
-
-			allPlayers.add(npc);
-			for (String name : names) {
-				aliasPlayerMap.put(name.trim(), npc);
-			}
-		}
+		addNpc("No lynch", "No one");
 	}
 
-	public void addNpc(String name) {
+	public void addNpc(String name, String... aliases) {
 		Player npc = new Player(name);
+		npc.setNpc(true);
 		npc.setVoteEligibility(false, true);
-		npc.setCountVisiblity(false, false);
+		
+		for (String s : aliases) {
+			npc.addAlias(s);
+		}
 
 		if (allPlayers.add(npc)) {
-			aliasPlayerMap.put(name.trim(), npc);
 			System.out.println("Added vote option " + name + " to the game.");
 		} else {
 			System.out.println("Vote option " + name + " is already in the game.");
@@ -99,54 +58,7 @@ public class Actors {
 	}
 
 	public void addPlayer(String name) {
-		// check if a player with this exact name/alias already exists
-		Player player = aliasPlayerMap.get(name);
-		if (player != null) {
-			return;
-		}
-		// otherwise, create a new player object for this player
-		player = new Player(name);
-		// add the given name to the aliases
-		aliasPlayerMap.put(name, player);
-		// add the player object to the set of unique players
-		allPlayers.add(player);
-		System.out.println(player.getName() + " was added to the game.");
-
-		// check the aliases.xml for matches/close matches and import other aliases
-		String matchedName = name;
-		double matchedPercent = 0;
-		String[] matchedLine = null;
-		// look at every alias element in the aliases xml
-		for (Element aliasesList : aliasDocument.getElementsByTag("alias")) {
-			// compare the given name to each name in the alias element
-			String[] aliases = aliasesList.text().split(";");
-			for (String alias : aliases) {
-				// use fuzzy search on the names in the aliases.xml to import aliases even if the name is misspelled slightly
-				alias = alias.trim();
-				double result = FuzzyMatch.levenshteinDistanceNormalized(name.toLowerCase(), alias.toLowerCase());
-				//System.out.println(name + " " + result);
-				if (result > matchedPercent && result >= 0.5) {
-					matchedLine = aliases;
-					matchedPercent = result;
-					matchedName = alias;
-					break;
-				}
-			}
-		}
-
-		if (matchedLine != null) {
-			// aliases found
-
-			// put aliases into map with the player object as its value
-			for (String aliasFound : matchedLine) {
-				aliasPlayerMap.put(aliasFound.trim(), player);
-			}
-
-			if (matchedPercent != 1) {
-				System.out.println("(?) Perhaps you meant " + matchedName + " instead of " + name + "?");
-			}
-			System.out.println("Imported aliases for " + player.getName() + ": " + Arrays.asList(matchedLine).toString());
-		}
+		allPlayers.add(new Player(name));
 	}
 
 	public void removePlayer(String name) {
@@ -155,16 +67,17 @@ public class Actors {
 			p.unvote();
 			p.pardon();
 			allPlayers.remove(p);
-			aliasPlayerMap.remove(name);
-
-			// remove his other aliases from the map
-			Element alias = aliasDocument.getElementsMatchingOwnText(name).first();
-			if (alias != null) {
-				for (Element key : alias.siblingElements()) {
-					aliasPlayerMap.remove(key.text());
-				}
-			}
 			System.out.println(p.getName() + " was removed from the game.");
+		}
+	}
+	
+	public void addAlias(String player, String alias) {
+		Player p = getPlayer(player);
+		if (p != null) {
+			p.addAlias(alias);
+			System.out.printf("Added alias \"%s\" for \"%s\"%n", alias, player);
+		} else {
+			System.out.printf("(x) %s was not found.%n", player);
 		}
 	}
 
@@ -199,7 +112,7 @@ public class Actors {
 	}
 
 	public void unvote(String voter) {
-		Player v = aliasPlayerMap.get(voter);
+		Player v = getPlayer(voter);
 		if (v != null && v.isVoting()) {
 			v.unvote();
 			System.out.printf("%s unvoted%n", voter);
@@ -342,7 +255,7 @@ public class Actors {
 		Player[] playersSortedByPosts = allPlayers.stream().sorted((p1, p2) -> p2.getTotalPosts() - p1.getTotalPosts()).toArray(Player[]::new);
 
 		for (Player p : playersSortedByPosts) {
-			if (p.showInPostCount() || p.getTotalPosts() > 0) {
+			if (!p.isNpc()) {
 				// make sure the post count has a value for the current day
 				ArrayList<Integer> postCount = p.getPostCount();
 				while (postCount.size() <= day) {
@@ -396,21 +309,19 @@ public class Actors {
 
 		for (Player p : playersSortedByVotes) {
 			// if the player has votes on him, print out the voters
-			if (p.getTotalVotes() > 0) {
+			if (p.isNpc() || p.getTotalVotes() > 0) {
 				System.out.printf("(%d) %-" + longestName + "s %s%n", p.getTotalVotes(), p.getName(), p.getVoters());
 			}
 			// if the player has not voted, add him to the list of non-voters
-			if (p.isAlive() && p.showInVoteCount() && !p.isVoting()) {
+			if (!p.isNpc() && p.isAlive() && !p.isVoting()) {
 				novotes.add(p);
 			}
 		}
 
-		// if the GM has given the bot a player list, print additional information
-
 		// list players with no votes
 		System.out.printf("(%d) %-" + longestName + "s %s%n", novotes.size(), "No vote", novotes.toString());
 		System.out.printf("Hammer is at %d votes.%n", hammer);
-	
+
 		// list the players that are alive
 		System.out.printf("%n%d players alive: %n", allPlayersAlive.length);
 		for (Player p : allPlayersAlive) {
@@ -431,29 +342,26 @@ public class Actors {
 	}
 
 	/**
-	 * Does a fuzzy search for the player object corresponding to the given name
+	 * Searches for the player object corresponding to the given name
 	 * @param name The name of the player to search for
 	 * @return The Player object whose name is the closest match
 	 */
 	private Player getPlayer(String name) {
-		Player matchedPlayer = aliasPlayerMap.get(name);
-		// check if an exact match for that alias exists
-		if (matchedPlayer != null) {
-			return matchedPlayer;
-		}
-		// use fuzzy match to find the closest alias in TreeMap
 		double matchedPercent = 0;
-		for (String alias : aliasPlayerMap.keySet()) {
-			// if the given name is a substring of an alias, that alias is probably the right one
-			// so return the player object associated with it
-			if (alias.toLowerCase().contains(name.toLowerCase())) {
-				return aliasPlayerMap.get(alias);
-			}
-			// otherwise, do a fuzzy match
-			double result = FuzzyMatch.jaroWinklerDistance(name.toLowerCase(), alias.toLowerCase());
-			if (result > matchedPercent && result > 0.8) {
-				matchedPlayer = aliasPlayerMap.get(alias);
-				matchedPercent = result;
+		Player matchedPlayer = null;
+		for (Player p : allPlayers) {
+			for (String alias : p.getAliases()) {
+				// if the given name is a substring of an alias, that alias is probably the right one
+
+				if (stringContainsCharsInOrder(alias,name)) {
+					return p;
+				}
+				// otherwise, do a fuzzy match
+				double result = FuzzyMatch.jaroWinklerDistance(name.toLowerCase(), alias.toLowerCase());
+				if (result > matchedPercent && result > 0.8) {
+					matchedPlayer = p;
+					matchedPercent = result;
+				}
 			}
 		}
 
@@ -463,6 +371,15 @@ public class Actors {
 		}
 
 		return matchedPlayer;
+	}
+
+	// returns true if input string contains all chars of match string
+	private boolean stringContainsCharsInOrder(String input, String chars) {
+		StringBuilder sb = new StringBuilder("(?i)");
+		for (char c : chars.toCharArray()) {
+			sb.append(c + ".*");
+		}
+		return input.matches(sb.toString());
 	}
 
 	/**
@@ -481,11 +398,11 @@ public class Actors {
 	}
 
 	private Player[] getPlayersAlive() {
-		return getPlayers((Player p) -> p.isAlive() && p.showInVoteCount() );
+		return getPlayers((Player p) -> p.isAlive());
 	}
 
 	private Player[] getPlayersDead() {
-		return getPlayers((Player p) -> !p.isAlive() && p.showInVoteCount() );
+		return getPlayers((Player p) -> !p.isAlive() && !p.isNpc());
 	}
 
 	private Player[] getPlayers(Predicate<Player> pred) {

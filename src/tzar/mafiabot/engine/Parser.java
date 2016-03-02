@@ -296,7 +296,7 @@ public class Parser {
 						case "##players":
 							// get the html of the ##players list
 							TextNode t = TextNode.createFromEncoded(aBoldTag.html(), "aURI");
-							System.out.print(t.text().toString());
+							System.err.println(t.text().toString());
 							// make an array with each element containing a player name
 							String[] playerList = t.text().split("<br>\\s*");
 							// create the internal player list using the array
@@ -325,6 +325,12 @@ public class Parser {
 							continue;
 
 						switch (command) {
+						case "##alias":
+							String[] alias = args.split(" ");
+							if (alias.length > 2) {
+								actors.addAlias(alias[0], alias[alias.length -1]);
+							}
+							break;
 						case "##addplayer":
 							actors.addPlayer(args);
 							break;

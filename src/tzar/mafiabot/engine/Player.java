@@ -6,13 +6,10 @@ import java.util.LinkedList;
 public class Player implements Comparable<Player> {
 	// implement events?
 	private String name = null;
+	private ArrayList<String> aliases = new ArrayList<String>();
 
 	private boolean canVote = true;
 	private boolean canBeVoted = true;
-
-	// npcs do not contribute to hammer, aren't displayed when they don't vote, and aren't displayed in the post count
-	private boolean showInVoteCount = true;
-	private boolean showInPostCount = true;
 
 	private int voteNum = 1;
 	private int voteWeight = 1;
@@ -23,9 +20,27 @@ public class Player implements Comparable<Player> {
 	private int cumulativePostLength = 0;
 	private int expiryDate = -1;
 
+	private boolean isNpc = false;
 
 	public Player(String name) {
 		this.name = name;
+		aliases.add(name);
+	}
+	
+	public void addAlias(String alias) {
+		aliases.add(alias);
+	}
+	
+	public String[] getAliases() {
+		return aliases.toArray(new String[aliases.size()]);
+	}
+	
+	public void setNpc(boolean isNpc) {
+		this.isNpc = isNpc;
+	}
+	
+	public boolean isNpc() {
+		return isNpc;
 	}
 
 	public void vote(Player candidate) {
@@ -86,19 +101,6 @@ public class Player implements Comparable<Player> {
 	public void setVoteEligibility(boolean canVote, boolean canBeCandidate) {
 		this.canVote = canVote;
 		this.canBeVoted = canBeCandidate;
-	}
-
-	public boolean showInVoteCount() {
-		return this.showInVoteCount;
-	}
-
-	public boolean showInPostCount() {
-		return this.showInPostCount;
-	}
-
-	public void setCountVisiblity(boolean voteCount, boolean postCount) {
-		this.showInVoteCount = voteCount;
-		this.showInPostCount = postCount;
 	}
 
 	public int getVoteNum() {
