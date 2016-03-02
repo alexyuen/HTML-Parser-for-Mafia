@@ -25,9 +25,7 @@ Simply ensure your players post bolded votes like so: **##vote Alex**
 
 Players can remove their vote with a bolded **##unvote**
 
-Unvoting is optional. Players do not need to unvote before voting for someone else.
-
-The application will count all the **bolded** votes and display a tally.
+The application will count all the **bolded** votes and display a tally. Players do not need to unvote to change their vote. Players do not have to type out another player’s name exactly, but if the name is too vague the vote will be rejected. 
 
 # Usage (advanced): #
 
@@ -54,6 +52,8 @@ The following commands are optional but are provided to you for greater control 
 * **##addplayer <player> / ##removeplayer <player>** - Adds / removes a player from the game. 
 
 * **##addnpc <name> / ##removenpc <name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
+
+* **##alias <player> <alias>** - Allows votes on an alias to be counted for the player (eg **##alias Robert Bob** will allow votes for Bob to be counted for Robert)
 
 * **##gm <name>** – Gives someone GM permissions so they can use the above GM commands. The thread maker is automatically granted GM permissions.
 
