@@ -4,7 +4,7 @@ The primary goal of this tool is to assist Game Moderators in managing and keepi
 
 If you are a Game Moderator and would like to use this tool, feel free to message me with a link to your mafia thread and I’ll send you a download link.
 
-# Features:#
+# Features
 
 * No set-up required! Simply run the MafiaBot.jar file and the parser will do the rest!
 
@@ -20,53 +20,50 @@ If you are a Game Moderator and would like to use this tool, feel free to messag
 
 * Thread caching! Parsed posts will be downloaded and saved to a file in the same directory as MafiaBot.jar; this makes subsequent runs much faster.
 
-# Usage (basic): #
+# Usage (basic)
 Simply ensure your players post bolded votes like so: **##vote Alex**
 
 Players can remove their vote with a bolded **##unvote**
 
-The application will count all the **bolded** votes and display a tally. Players do not need to unvote to change their vote. Players do not have to type out another player’s name exactly, but if the name is too vague the vote will be rejected. 
+* The application will count all the **bolded** votes and display a tally. 
+* Players do not need to unvote to change their vote. 
+* Players do not have to type out another player’s name exactly, but if the name is too vague the vote will be rejected. 
 
-# Usage (advanced): #
+# Usage (advanced)
 
 The following commands are optional but are provided to you for greater control over the game. 
 
-* **##kill <player>** - Kills the player. Dead players are not allowed to vote and cannot be voted upon. Active votes made by or made on the dead player are removed.
+* **##kill \<player>** - Kills the player. Dead players are not allowed to vote and cannot be voted upon. Active votes made by or made on the dead player are removed.
 
-* **##revive <player>** - Revives the player so they can vote and be voted on again.
+* **##revive \<player>** - Revives the player so they can vote and be voted on again.
 
-* **##setvoteweight <player> <num>** - Changes the weight of a player’s vote. By default, every player has a vote weight of 1.
+* **##setvoteweight \<player> \<num>** - Changes the weight of a player’s vote. By default, every player has a vote weight of 1.
 
-* **##setvotenum <player> <num>** - Changes the number of votes a player has. By default, every player has one vote. To use their multiple votes, players simply ##vote multiple times; and ##unvote will remove all their votes. Players cannot stack multiple votes on one person.
+* **##setvotenum \<player> \<num>** - Changes the number of votes a player has. By default, every player has one vote. To use their multiple votes, players simply ##vote multiple times; and ##unvote will remove all their votes. Players cannot stack multiple votes on one person.
 
-* **##takevote <player>** - Removes the player’s ability to vote until you give it back.
+* **##takevote \<player>** - Removes the player’s ability to vote until you give it back.
 
-* **##givevote <player>** - Reinstates the player’s ability to vote
+* **##givevote \<player>** - Reinstates the player’s ability to vote
 
-* **##strikevote <player>** - Forces the player to unvote
+* **##strikevote \<player>** - Forces the player to unvote
 
-* **##pardon <player>** - Removes all votes on a player
+* **##pardon \<player>** - Removes all votes on a player
 
 * **##purgevotes** - Removes everyone’s votes
 
-* **##addplayer <player> / ##removeplayer <player>** - Adds / removes a player from the game. 
+* **##addplayer \<player> / ##removeplayer \<player>** - Adds / removes a player from the game. 
 
-* **##addnpc <name> / ##removenpc <name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
+* **##addnpc \<name> / ##removenpc \<name>** - Adds / removes an npc from the game. Npcs cannot vote, but can be voted upon. Useful if you want players to vote on something that’s not another player. A default NPC is "No lynch".
 
-* **##alias <player> <alias>** - Allows votes on an alias to be counted for the player (eg **##alias Robert Bob** will allow votes for Bob to be counted for Robert)
+* **##alias \<player> \<alias>** - Allows votes on an alias to be counted for the player (eg **##alias Robert Bob** will allow votes for Bob to be counted for Robert)
 
-* **##gm <name>** – Gives someone GM permissions so they can use the above GM commands. The thread maker is automatically granted GM permissions.
+* **##gm \<name>** – Gives someone GM permissions so they can use the above GM commands. The thread maker is automatically granted GM permissions.
 
-* **##<anything>** - Players can use this catch-all command (eg **##shoot Tim**) and it will be shown and linked within the app.
+* **##\<anything>** - Players can use this catch-all command (eg **##shoot Tim**) and it will be shown and linked within the app.
 
 
-
-***
-# Example vote count: #
-
+## Example vote count
 ```
-#!html
-
 Current vote count (Night 14):
 (4/4) No vote: [Category 5, Hylius, Lorcan, oneyou]
 
@@ -98,12 +95,8 @@ Zylo
 
 ```
 
-***
-# Example post count: #
-
+## Example post count
 ```
-#!html
-
 Post count:
                 [ D1] [ D2] [ D3] [ D4] [ D5] [ D6] [ D7] [ D8] [ D9] [D10] [D11] [D12] [D13] [D14] [Total]
 Tanki:          [  8] [ 12] [ 30] [ 40] [ 61] [ 54] [ 48] [ 18] [ 19] [  1] [  0] [  0] [  0] [  9] [ 300] 
@@ -128,5 +121,4 @@ Sandman0893:    [ 16] [  7] [  8] [ 12] [  1] [  2] [  1] [  0] [  0] [  0] [  0
 theGECK:        [  0] [  0] [  0] [  0] [  2] [  4] [  8] [  2] [  3] [  2] [  2] [  7] [  3] [  3] [  36] 
 Gidonihah:      [  8] [  0] [  1] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  6] [  15] 
 Mattiator:      [  6] [  2] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [  0] [   8] 
-
 ```
